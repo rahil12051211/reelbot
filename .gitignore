@@ -1,0 +1,8 @@
+.env
+ig_session*.json
+yt_token.json
+client_secret.json
+output/
+__pycache__/
+*.pyc
+venv/
