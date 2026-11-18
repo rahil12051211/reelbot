@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
+<title>REELBOT // NEURAL 3D STUDIO</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050711;--card:rgba(13,18,38,0.68);--card-solid:#0d1226;
+  --fg:#edf2ff;--muted:#7e8bb6;--cyan:#00f2fe;--violet:#8a2be2;--magenta:#ff007f;--lime:#00ff9d;--amber:#ffb800;
+  --border:rgba(0,242,254,0.22);--glow:0 0 28px rgba(0,242,254,0.22),0 0 60px rgba(138,43,226,0.18);
+}
+@media(prefers-color-scheme:light){
+  :root{
+    --bg:#070a17;--card:rgba(15,21,44,0.72);--card-solid:#10162f;
+    --fg:#f0f4ff;--muted:#8b98c7;--border:rgba(0,242,254,0.26);
+  }
+}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--fg);min-height:100vh;overflow-x:hidden;
+  perspective:1200px;-webkit-tap-highlight-color:transparent;
+}
+#bg3d{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.wrap{position:relative;z-index:2;max-width:1120px;margin:0 auto;padding:24px 18px 70px}
+
+/* Header with 3D Gyro Core */
+header{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;
+  margin-bottom:22px;padding:16px 20px;border-radius:18px;
+  background:linear-gradient(135deg,rgba(14,20,44,0.78),rgba(22,12,48,0.68));
+  border:1px solid var(--border);backdrop-filter:blur(18px);box-shadow:var(--glow);
+  transform-style:preserve-3d;
+}
+.brand{display:flex;align-items:center;gap:16px}
+.orb-scene{width:50px;height:50px;perspective:400px;position:relative;flex-shrink:0}
+.orb{
+  width:100%;height:100%;position:relative;transform-style:preserve-3d;
+  animation:spin3d 7s linear infinite;
+}
+.orb.fast{animation-duration:1.8s}
+.ring{
+  position:absolute;inset:0;border-radius:50%;
+  border:2px solid var(--cyan);box-shadow:0 0 14px var(--cyan),inset 0 0 10px rgba(0,242,254,0.3);
+}
+.ring:nth-child(1){transform:rotateX(65deg) rotateY(15deg)}
+.ring:nth-child(2){transform:rotateX(-55deg) rotateY(60deg);border-color:var(--magenta);box-shadow:0 0 14px var(--magenta)}
+.ring:nth-child(3){transform:rotateY(75deg) rotateZ(45deg);border-color:#a29bfe;box-shadow:0 0 14px #a29bfe}
+.core-dot{
+  position:absolute;top:50%;left:50%;width:14px;height:14px;margin:-7px;border-radius:50%;
+  background:radial-gradient(circle,#fff,var(--cyan));box-shadow:0 0 20px var(--cyan),0 0 35px var(--magenta);
+}
+@keyframes spin3d{
+  0%{transform:rotateX(0deg) rotateY(0deg) rotateZ(0deg)}
+  100%{transform:rotateX(360deg) rotateY(360deg) rotateZ(180deg)}
+}
+.title-grp h1{
+  font-size:clamp(1.2rem,3vw,1.72rem);font-weight:800;letter-spacing:1.3px;text-transform:uppercase;
+  background:linear-gradient(90deg,#fff,var(--cyan),#c471ed,var(--magenta));
+  background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:shine 4s linear infinite;
+}
+@keyframes shine{to{background-position:200% center}}
+.sub{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:3px}
+.hdr-badges{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.telemetry{
+  display:flex;gap:8px;align-items:center;font-size:11px;letter-spacing:.8px;font-weight:700;
+  color:var(--cyan);background:rgba(0,242,254,0.08);padding:7px 13px;border-radius:99px;
+  border:1px solid rgba(0,242,254,0.28);
+}
+.ig-badge{
+  display:flex;gap:8px;align-items:center;font-size:11px;letter-spacing:.8px;font-weight:800;
+  padding:7px 13px;border-radius:99px;transition:all .25s;
+  background:rgba(255,255,255,0.05);color:var(--muted);border:1px solid rgba(255,255,255,0.15);
+}
+.ig-badge.ok{
+  color:var(--lime);background:rgba(0,255,157,0.1);border-color:var(--lime);
+  box-shadow:0 0 18px rgba(0,255,157,0.35);
+}
+.ig-badge.err{
+  color:#ff6b8b;background:rgba(255,0,85,0.12);border-color:#ff2a6d;
+  box-shadow:0 0 16px rgba(255,0,85,0.3);
+}
+.ig-badge.wait{
+  color:var(--amber);background:rgba(255,184,0,0.12);border-color:var(--amber);
+}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime);animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(0.8)}}
+
+/* 3D Command Deck */
+.deck{
+  position:relative;padding:20px;border-radius:20px;margin-bottom:22px;
+  background:var(--card);border:1px solid var(--border);backdrop-filter:blur(22px);
+  box-shadow:0 20px 50px rgba(0,0,0,0.6),var(--glow);
+  transform-style:preserve-3d;transition:transform .2s ease-out,box-shadow .3s;
+}
+.deck::before{
+  content:"";position:absolute;inset:-1px;border-radius:20px;padding:1px;
+  background:linear-gradient(125deg,var(--cyan),transparent 40%,var(--magenta));
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;
+}
+.live-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.live-chips span.lbl{font-size:10.5px;font-weight:800;letter-spacing:1px;color:var(--magenta);text-transform:uppercase}
+.chip{
+  padding:6px 12px;border-radius:99px;font-size:11.5px;font-weight:700;cursor:pointer;
+  background:rgba(255,0,127,0.12);color:#ff99cc;border:1px solid rgba(255,0,127,0.35);
+  transition:all .18s;
+}
+.chip:hover{background:var(--magenta);color:#fff;box-shadow:0 0 14px var(--magenta);transform:translateY(-1px)}
+.grid-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+.grid-row:last-child{margin-bottom:0}
+.field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:145px}
+.field.url-field{flex:3;min-width:240px}
+.field.sm{flex:0 0 105px;min-width:92px}
+.field span{font-size:10.5px;text-transform:uppercase;letter-spacing:1.1px;color:var(--cyan);font-weight:700}
+input,select,textarea{
+  width:100%;padding:11px 13px;border:1px solid rgba(255,255,255,0.14);border-radius:11px;
+  background:rgba(5,8,20,0.75);color:var(--fg);font-size:14px;outline:none;
+  transition:border-color .2s,box-shadow .2s,transform .15s;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--cyan);box-shadow:0 0 16px rgba(0,242,254,0.32);transform:translateZ(6px);
+}
+.btn-ig-conn{
+  padding:11px 16px;border-radius:11px;border:1px solid var(--cyan);cursor:pointer;
+  background:linear-gradient(135deg,rgba(0,242,254,0.18),rgba(138,43,226,0.28));
+  color:#fff;font-weight:800;font-size:12px;letter-spacing:.7px;text-transform:uppercase;
+  white-space:nowrap;transition:all .2s;height:42px;
+}
+.btn-ig-conn:hover{background:linear-gradient(135deg,var(--cyan),var(--violet));box-shadow:0 0 18px rgba(0,242,254,0.55);transform:translateY(-1px)}
+.btn-2fa-conn{
+  padding:11px 16px;border-radius:11px;border:1px solid var(--lime);cursor:pointer;
+  background:linear-gradient(135deg,rgba(0,255,157,0.22),rgba(0,242,254,0.28));
+  color:var(--lime);font-weight:800;font-size:12px;letter-spacing:.7px;text-transform:uppercase;
+  white-space:nowrap;transition:all .2s;height:42px;box-shadow:0 0 14px rgba(0,255,157,0.25);
+}
+.btn-2fa-conn:hover,.btn-2fa-conn.pulse-btn{
+  background:linear-gradient(135deg,var(--lime),var(--cyan));color:#040814;
+  box-shadow:0 0 24px rgba(0,255,157,0.75);transform:translateY(-1px);
+}
+.ig-feedback{
+  width:100%;padding:10px 14px;border-radius:11px;font-size:12.5px;font-weight:700;
+  display:none;align-items:center;justify-content:space-between;margin-bottom:12px;line-height:1.4;
+}
+.ig-feedback.ok{display:flex;background:rgba(0,255,157,0.1);border:1px solid rgba(0,255,157,0.4);color:var(--lime)}
+.ig-feedback.err{display:flex;background:rgba(255,0,85,0.14);border:1px solid rgba(255,0,85,0.45);color:#ff7898}
+.ig-feedback.wait{display:flex;background:rgba(255,184,0,0.12);border:1px solid rgba(255,184,0,0.4);color:var(--amber)}
+
+.toggles{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+label.chk{
+  display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;
+  padding:9px 14px;border-radius:10px;background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.1);transition:all .2s;
+}
+label.chk:hover{border-color:var(--cyan);background:rgba(0,242,254,0.08)}
+label.chk input{width:16px;height:16px;accent-color:var(--cyan)}
+
+.btn-grp{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn-launch{
+  padding:12px 24px;border:none;border-radius:12px;cursor:pointer;
+  font-weight:800;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#fff;
+  background:linear-gradient(135deg,var(--cyan),var(--violet) 55%,var(--magenta));
+  background-size:200% 200%;box-shadow:0 8px 25px rgba(138,43,226,0.45),0 0 20px rgba(0,242,254,0.35);
+  transition:transform .18s,box-shadow .2s;transform:translateZ(15px);
+}
+.btn-launch:hover:not(:disabled){
+  transform:translateY(-2px) translateZ(24px) scale(1.02);
+  box-shadow:0 14px 35px rgba(255,0,127,0.5),0 0 30px rgba(0,242,254,0.6);
+}
+.btn-launch:disabled{opacity:.5;cursor:not-allowed}
+
+.btn-stop{
+  display:none;padding:12px 20px;border:1px solid #ff2a6d;border-radius:12px;cursor:pointer;
+  font-weight:800;font-size:13.5px;letter-spacing:1px;text-transform:uppercase;color:#fff;
+  background:linear-gradient(135deg,#ff0055,#990033);
+  box-shadow:0 0 22px rgba(255,0,85,0.55);transition:all .18s;transform:translateZ(15px);
+}
+.btn-stop:hover{background:#ff0055;box-shadow:0 0 32px rgba(255,0,85,0.85);transform:translateY(-2px) scale(1.03)}
+
+/* 3D HUD Pipeline Status */
+.hud{
+  display:none;padding:18px 20px;border-radius:18px;margin-bottom:24px;
+  background:var(--card);border:1px solid var(--border);backdrop-filter:blur(18px);
+  box-shadow:var(--glow);
+}
+.hud-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+.hud-msg{font-size:13.5px;font-weight:700;letter-spacing:.6px;color:#fff;display:flex;align-items:center;gap:10px}
+.hud-pct{font-size:14px;font-weight:800;color:var(--cyan);font-family:monospace}
+.bar-track{
+  width:100%;height:10px;border-radius:99px;background:rgba(255,255,255,0.07);
+  overflow:hidden;position:relative;margin-bottom:14px;border:1px solid rgba(0,242,254,0.2);
+}
+.bar-fill{
+  height:100%;width:0%;border-radius:99px;
+  background:linear-gradient(90deg,var(--cyan),var(--violet),var(--magenta));
+  box-shadow:0 0 18px var(--cyan);transition:width .4s cubic-bezier(.22,1,.36,1);
+}
+.stages{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.stg{
+  padding:8px 6px;border-radius:10px;font-size:10.5px;font-weight:700;letter-spacing:.5px;
+  text-align:center;text-transform:uppercase;background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.08);color:var(--muted);transition:all .3s;
+}
+.stg.active{
+  color:#fff;border-color:var(--cyan);
+  background:linear-gradient(135deg,rgba(0,242,254,0.22),rgba(138,43,226,0.22));
+  box-shadow:0 0 18px rgba(0,242,254,0.35);transform:translateY(-2px);
+}
+.stg.done{color:var(--lime);border-color:rgba(0,255,157,0.35);background:rgba(0,255,157,0.08)}
+
+/* 3D Holographic Reel Cards */
+.clips{
+  display:grid;gap:24px;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));
+  perspective:1400px;
+}
+.card{
+  position:relative;background:var(--card);border:1px solid var(--border);
+  border-radius:18px;overflow:hidden;display:flex;flex-direction:column;
+  backdrop-filter:blur(18px);box-shadow:0 18px 40px rgba(0,0,0,0.55),var(--glow);
+  transform-style:preserve-3d;transition:transform .15s ease-out,box-shadow .25s;
+}
+.card:hover{box-shadow:0 26px 60px rgba(0,0,0,0.75),0 0 35px rgba(0,242,254,0.38)}
+.glare{
+  position:absolute;inset:0;pointer-events:none;z-index:4;
+  background:radial-gradient(circle at 50% 50%,rgba(255,255,255,0.14),transparent 60%);
+  opacity:0;transition:opacity .2s;
+}
+.card:hover .glare{opacity:1}
+.vid-wrap{position:relative;width:100%;aspect-ratio:9/16;background:#02040a;overflow:hidden}
+.card video{width:100%;height:100%;object-fit:cover;display:block}
+.vid-placeholder{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;color:var(--cyan);font-size:12px;letter-spacing:1.2px;text-transform:uppercase;
+}
+.holo-cube{
+  width:42px;height:42px;border:2px solid var(--cyan);border-radius:10px;
+  box-shadow:0 0 20px var(--cyan),inset 0 0 12px var(--magenta);
+  animation:spin3d 2.4s linear infinite;
+}
+.badge-float{
+  position:absolute;top:12px;right:12px;z-index:3;
+  padding:5px 11px;border-radius:99px;font-size:11.5px;font-weight:800;letter-spacing:.6px;
+  background:rgba(7,10,25,0.82);color:var(--lime);border:1px solid var(--lime);
+  box-shadow:0 0 16px rgba(0,255,157,0.4);backdrop-filter:blur(8px);
+}
+.ttl-float{
+  position:absolute;bottom:12px;right:12px;z-index:3;
+  padding:4px 10px;border-radius:99px;font-size:10.5px;font-weight:700;letter-spacing:.5px;
+  background:rgba(7,10,25,0.86);color:var(--amber);border:1px solid rgba(255,184,0,0.45);
+  box-shadow:0 0 12px rgba(255,184,0,0.28);backdrop-filter:blur(8px);
+}
+.time-float{
+  position:absolute;top:12px;left:12px;z-index:3;
+  padding:5px 10px;border-radius:99px;font-size:11px;font-weight:700;
+  background:rgba(7,10,25,0.82);color:var(--cyan);border:1px solid rgba(0,242,254,0.4);
+  backdrop-filter:blur(8px);
+}
+.card .info{padding:16px;display:flex;flex-direction:column;gap:8px;flex:1;transform:translateZ(18px)}
+.card h3{font-size:15px;line-height:1.35;color:#fff;font-weight:700}
+.reason{
+  font-size:11.5px;color:var(--cyan);background:rgba(0,242,254,0.08);
+  padding:6px 10px;border-radius:8px;border-left:3px solid var(--cyan);
+}
+.cap{width:100%;font-size:13px;resize:vertical;min-height:56px;margin-top:2px}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
+.actions button,.actions a.btn-link{
+  flex:1;padding:10px 8px;border:1px solid rgba(0,242,254,0.35);border-radius:10px;
+  background:linear-gradient(135deg,rgba(0,242,254,0.16),rgba(138,43,226,0.22));
+  color:#fff;font-weight:700;font-size:11.5px;cursor:pointer;transition:all .18s;
+  text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;
+}
+.actions button:hover,.actions a.btn-link:hover{
+  background:linear-gradient(135deg,var(--cyan),var(--violet));
+  box-shadow:0 0 16px rgba(0,242,254,0.5);transform:translateY(-2px);
+}
+.actions button.btn-del{
+  flex:0 0 auto;border-color:rgba(255,0,127,0.4);
+  background:rgba(255,0,127,0.14);color:#ff80b5;padding:10px 12px;
+}
+.actions button.btn-del:hover{
+  background:var(--magenta);color:#fff;box-shadow:0 0 16px rgba(255,0,127,0.6);
+}
+.err{font-size:11.5px;color:#ff5e7e;background:rgba(255,0,85,0.12);padding:6px 9px;border-radius:8px;border:1px solid rgba(255,0,85,0.3)}
+.ok-banner{font-size:11.5px;color:var(--lime);background:rgba(0,255,157,0.1);padding:6px 9px;border-radius:8px;border:1px solid rgba(0,255,157,0.35);font-weight:700}
+
+/* AI Reels Vault Section */
+.vault-sec{margin-top:42px}
+.vault-hdr{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  margin-bottom:20px;padding:16px 20px;border-radius:16px;
+  background:linear-gradient(135deg,rgba(14,20,44,0.78),rgba(30,14,56,0.68));
+  border:1px solid var(--border);backdrop-filter:blur(18px);box-shadow:var(--glow);
+}
+.vault-title{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.vault-title h2{
+  font-size:1.2rem;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;
+  background:linear-gradient(90deg,var(--cyan),#fff,var(--magenta));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.ttl-pill{
+  font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  padding:5px 12px;border-radius:99px;color:var(--amber);
+  background:rgba(255,184,0,0.1);border:1px solid rgba(255,184,0,0.35);
+}
+.btn-refresh{
+  padding:8px 14px;border-radius:10px;border:1px solid var(--border);
+  background:rgba(0,242,254,0.1);color:var(--cyan);font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .2s;
+}
+.btn-refresh:hover{background:var(--cyan);color:#050711;box-shadow:0 0 14px var(--cyan)}
+.empty-vault{
+  padding:32px 18px;text-align:center;border-radius:18px;
+  background:rgba(13,18,38,0.45);border:1px dashed rgba(0,242,254,0.25);
+  color:var(--muted);font-size:13.5px;letter-spacing:.5px;
+}
+
+/* Mobile & Tablet Responsive Design */
+@media(max-width:768px){
+  .wrap{padding:14px 12px 54px}
+  header{padding:14px 15px;gap:12px}
+  .hdr-badges{width:100%;justify-content:space-between}
+  .deck{padding:15px}
+  .field,.field.url-field{flex:1 1 100%;min-width:100%}
+  .field.sm{flex:1 1 calc(33.3% - 8px);min-width:85px}
+  .btn-ig-conn,.btn-2fa-conn{flex:1 1 100%;width:100%;height:44px;justify-content:center}
+  .toggles{width:100%}
+  label.chk{flex:1 1 100%;justify-content:flex-start}
+  .btn-grp{width:100%;margin-left:0}
+  .btn-launch,.btn-stop{flex:1 1 100%;width:100%;padding:14px}
+  .stages{grid-template-columns:repeat(3,1fr)}
+  .clips{grid-template-columns:1fr;gap:18px}
+  input,select,textarea{font-size:16px} /* Prevents iOS auto-zoom on focus */
+}
+</style>
+</head>
+<body>
+<canvas id="bg3d"></canvas>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="orb-scene">
+        <div class="orb" id="orb">
+          <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+          <div class="core-dot"></div>
+        </div>
+      </div>
+      <div class="title-grp">
+        <h1>ReelBot // Neural 3D Studio</h1>
+        <div class="sub">Instant Live DVR Burst · Cinema 80% Zoom · Auto Instagram First</div>
+      </div>
+    </div>
+    <div class="hdr-badges">
+      <div class="ig-badge" id="ig_hdr_badge">
+        <div class="dot"></div>
+        <span id="ig_hdr_txt">IG: NOT CONNECTED</span>
+      </div>
+      <div class="telemetry">
+        <div class="pulse"></div>
+        <span id="sys_state">CORE ONLINE // INT8 READY</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="deck" id="deck">
+    <div class="live-chips">
+      <span class="lbl">🔴 Top Live Streams Now:</span>
+      <button type="button" class="chip" onclick="pickLive('https://www.youtube.com/watch?v=wU4ZKAfY5rM')">🔴 Citizen TV Live (138K)</button>
+      <button type="button" class="chip" onclick="pickLive('https://www.youtube.com/watch?v=d407BwnLeVA')">🔴 NBC News NOW (6.1K)</button>
+      <button type="button" class="chip" onclick="pickLive('https://www.youtube.com/watch?v=EDbWwVR7i9Q')">🔴 GB News 24/7 (4.0K)</button>
+      <button type="button" class="chip" onclick="pickLive('https://www.youtube.com/watch?v=kyh14T8Oa8M')">🔴 ABC News Live (3.1K)</button>
+    </div>
+    <div class="grid-row">
+      <div class="field url-field">
+        <span>Stream / VOD Source URL</span>
+        <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=... or click a Live Stream above">
+      </div>
+      <div class="field sm">
+        <span>Reel Count</span>
+        <input type="number" id="nreels" value="3" min="1" max="10">
+      </div>
+      <div class="field sm">
+        <span>Live Mins</span>
+        <input type="number" id="livemin" value="1" min="0" title="Live capture minutes (0 = VOD, 1 = fast 60s live burst)">
+      </div>
+      <div class="field sm">
+        <span>Neural Model</span>
+        <select id="model"><option selected value="tiny">tiny ⚡</option><option value="base">base</option><option value="small">small</option><option value="medium">medium</option><option value="large-v2">large-v2</option></select>
+      </div>
+    </div>
+    <div class="grid-row">
+      <div class="field">
+        <span>Instagram Username</span>
+        <input type="text" id="iguser" placeholder="@username" onkeydown="if(event.key==='Enter')connectIG()">
+      </div>
+      <div class="field">
+        <span>Instagram Password</span>
+        <input type="password" id="igpass" placeholder="••••••••••••" onkeydown="if(event.key==='Enter')connectIG()">
+      </div>
+      <button type="button" class="btn-ig-conn" id="btn_conn" onclick="connectIG()">🔗 Connect IG</button>
+      <div class="field sm" style="flex:0 0 130px">
+        <span>6-Digit Code (Email/2FA)</span>
+        <input type="text" id="ig2fa" placeholder="6-digit code" maxlength="8" oninput="on2faInput()" onkeydown="if(event.key==='Enter')connectIG()">
+      </div>
+      <button type="button" class="btn-2fa-conn" id="btn_2fa" onclick="connectIG()">🔐 Verify 2FA &amp; Connect IG</button>
+      <div class="field">
+        <span>LLM Brain Key (Optional)</span>
+        <input type="password" id="llmkey" placeholder="sk-ant-... or xai-...">
+      </div>
+    </div>
+    <div id="ig_feedback" class="ig-feedback"></div>
+    <div class="grid-row" style="margin-top:6px">
+      <div class="toggles">
+        <label class="chk"><input type="checkbox" id="autoig" checked> ⚡ Auto-Upload to Instagram First After Cut</label>
+        <label class="chk"><input type="checkbox" id="autoyt"> Auto-Publish YouTube Shorts</label>
+      </div>
+      <div class="btn-grp">
+        <button class="btn-stop" id="stopbtn" onclick="stopJob()">🛑 End Process</button>
+        <button class="btn-launch" id="go" onclick="create()">⚡ Launch Neural Cut</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="hud" id="hud">
+    <div class="hud-top">
+      <div class="hud-msg"><span id="status_txt">Initializing pipeline…</span></div>
+      <div class="hud-pct" id="status_pct">0%</div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="bar_fill"></div></div>
+    <div class="stages">
+      <div class="stg" id="stg1">01 Ingest</div>
+      <div class="stg" id="stg2">02 RMS Wave</div>
+      <div class="stg" id="stg3">03 Whisper AI</div>
+      <div class="stg" id="stg4">04 Viral Cortex</div>
+      <div class="stg" id="stg5">05 9:16 Render</div>
+      <div class="stg" id="stg6">06 IG Upload</div>
+    </div>
+  </div>
+
+  <div id="clips" class="clips"></div>
+
+  <!-- AI Edited Reels Vault Section (48-Hour Auto-Delete) -->
+  <section class="vault-sec">
+    <div class="vault-hdr">
+      <div class="vault-title">
+        <h2>🗄️ AI Edited Reels Vault (<span id="vault_count">0</span>)</h2>
+        <span class="ttl-pill">⏳ Auto-Deletes After 2 Days (48H)</span>
+      </div>
+      <button class="btn-refresh" onclick="loadVault()">↻ Sync Vault</button>
+    </div>
+    <div id="vault_grid" class="clips"></div>
+  </section>
+</div>
+
+<script>
+// --- 3D Cyberpunk Wireframe + Particle Horizon Canvas ---
+const cvs=document.getElementById('bg3d'),ctx=cvs.getContext('2d');
+let W,H,mx=0,my=0,t=0,WARP=1;
+const IS_TOUCH=window.matchMedia('(hover: none)').matches;
+function resize(){W=cvs.width=window.innerWidth;H=cvs.height=window.innerHeight}
+window.addEventListener('resize',resize);resize();
+window.addEventListener('mousemove',e=>{mx=(e.clientX/W-0.5)*2;my=(e.clientY/H-0.5)*2});
+
+const STARS=Array.from({length:90},()=>({
+  x:(Math.random()-0.5)*1600,y:(Math.random()-0.5)*900,z:Math.random()*1000+50,
+  c:Math.random()>0.5?'#00f2fe':'#ff007f'
+}));
+
+function draw3D(){
+  ctx.fillStyle='rgba(5,7,17,0.38)';
+  ctx.fillRect(0,0,W,H);
+  t+=0.025*WARP;
+  const cx=W/2+mx*45,cy=H*0.42+my*25,fov=380;
+
+  for(const s of STARS){
+    s.z-=3.5*WARP;
+    if(s.z<=10){s.z=1000;s.x=(Math.random()-0.5)*1600;s.y=(Math.random()-0.5)*900}
+    const k=fov/s.z,px=cx+s.x*k,py=cy+s.y*k,r=Math.max(0.6,(1-s.z/1000)*2.8);
+    ctx.beginPath();ctx.fillStyle=s.c;ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
+  }
+
+  ctx.strokeStyle='rgba(0,242,254,0.16)';
+  ctx.lineWidth=1;
+  const cols=18,rows=14,spacing=80;
+  for(let z=1;z<rows;z++){
+    ctx.beginPath();
+    for(let x=-cols/2;x<=cols/2;x++){
+      const wx=x*spacing;
+      const wz=z*55-((t*35)%55);
+      if(wz<25)continue;
+      const wave=Math.sin(x*0.45+t)*18+Math.cos(z*0.35-t)*18;
+      const wy=190+wave;
+      const k=fov/wz,sx=cx+wx*k,sy=cy+wy*k;
+      if(x===-cols/2)ctx.moveTo(sx,sy);else ctx.lineTo(sx,sy);
+    }
+    ctx.stroke();
+  }
+  requestAnimationFrame(draw3D);
+}
+draw3D();
+
+// --- 3D Interactive Perspective Tilt (Desktop Only) ---
+function bindTilt(el,intensity=8){
+  if(IS_TOUCH)return;
+  el.addEventListener('mousemove',e=>{
+    const r=el.getBoundingClientRect();
+    const px=(e.clientX-r.left)/r.width-0.5;
+    const py=(e.clientY-r.top)/r.height-0.5;
+    el.style.transform=`perspective(1000px) rotateX(${(-py*intensity).toFixed(2)}deg) rotateY(${(px*intensity).toFixed(2)}deg) translateZ(6px)`;
+    const g=el.querySelector('.glare');
+    if(g)g.style.background=`radial-gradient(circle at ${((px+0.5)*100).toFixed(0)}% ${((py+0.5)*100).toFixed(0)}%,rgba(0,242,254,0.18),transparent 60%)`;
+  });
+  el.addEventListener('mouseleave',()=>{el.style.transform='perspective(1000px) rotateX(0) rotateY(0) translateZ(0)'});
+}
+bindTilt(document.getElementById('deck'),3);
+
+function pickLive(u){
+  document.getElementById('url').value=u;
+  document.getElementById('livemin').value=1;
+}
+
+// --- Instagram Connection Verification & Live Badge ---
+function on2faInput(){
+  const v=document.getElementById('ig2fa').value.trim();
+  const b2=document.getElementById('btn_2fa');
+  if(v.length>=6)b2.classList.add('pulse-btn');
+  else b2.classList.remove('pulse-btn');
+}
+
+function renderIGBadge(st){
+  if(!st)return;
+  const b=document.getElementById('ig_hdr_badge');
+  const txt=document.getElementById('ig_hdr_txt');
+  const fb=document.getElementById('ig_feedback');
+  const b2=document.getElementById('btn_2fa');
+  if(st.connected){
+    b.className='ig-badge ok';
+    txt.textContent=`IG CONNECTED: @${st.username}`;
+    fb.className='ig-feedback ok';
+    fb.innerHTML=`<span>🟢 Instagram Account Connected: <strong>@${st.username}</strong> — Ready for Automatic Reels Upload</span>`;
+    if(b2)b2.classList.remove('pulse-btn');
+    if(!document.getElementById('iguser').value)document.getElementById('iguser').value=st.username;
+  }else if(st.needs_2fa){
+    b.className='ig-badge wait';
+    txt.textContent=`CODE REQUIRED (@${st.username})`;
+    fb.className='ig-feedback wait';
+    fb.innerHTML=`<span>📩 <strong>Verification Code Sent for @${st.username}:</strong> ${st.error}</span>`;
+    if(b2)b2.classList.add('pulse-btn');
+    document.getElementById('ig2fa').focus();
+  }else if(st.error){
+    b.className='ig-badge err';
+    txt.textContent=`IG DISCONNECTED`;
+    fb.className='ig-feedback err';
+    fb.innerHTML=`<span>🔴 Instagram Not Connected (${st.username?'@'+st.username:'No user'}): ${st.error}</span>`;
+  }else{
+    b.className='ig-badge';
+    txt.textContent='IG: NOT CONNECTED';
+  }
+}
+
+function connectIG(){
+  const u=document.getElementById('iguser').value.trim();
+  const p=document.getElementById('igpass').value;
+  const c=document.getElementById('ig2fa').value.trim();
+  if(!u||!p)return alert('Enter your Instagram username and password first');
+  const b=document.getElementById('ig_hdr_badge');
+  const txt=document.getElementById('ig_hdr_txt');
+  const fb=document.getElementById('ig_feedback');
+  const btn=document.getElementById('btn_conn');
+  const btn2=document.getElementById('btn_2fa');
+  b.className='ig-badge wait';
+  txt.textContent=`CONNECTING @${u.replace(/^@/,'')}…`;
+  fb.className='ig-feedback wait';
+  fb.innerHTML=`<span>⚡ Fast-connecting to Instagram as <strong>@${u.replace(/^@/,'')}</strong>${c?' with verification code':''}…</span>`;
+  btn.disabled=true;if(btn2)btn2.disabled=true;
+  fetch('/api/ig/connect',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ig_username:u,ig_password:p,ig_2fa:c})
+  }).then(r=>r.json()).then(st=>{
+    btn.disabled=false;if(btn2)btn2.disabled=false;
+    renderIGBadge(st);
+  }).catch(()=>{btn.disabled=false;if(btn2)btn2.disabled=false;});
+}
+
+fetch('/api/ig/status').then(r=>r.json()).then(renderIGBadge);
+
+// --- Pipeline Job Controller ---
+let JOB=null,TIMER=null,LAST_CLIPS_SIG='';
+function create(){
+  const url=document.getElementById('url').value.trim();
+  if(!url)return alert('Paste a stream or video URL');
+  document.getElementById('go').disabled=true;
+  document.getElementById('stopbtn').style.display='inline-block';
+  document.getElementById('hud').style.display='block';
+  document.getElementById('orb').classList.add('fast');
+  document.getElementById('sys_state').textContent='NEURAL PIPELINE ACTIVE';
+  WARP=3.2;LAST_CLIPS_SIG='';
+  fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      url,
+      n:+document.getElementById('nreels').value,
+      live_min:+document.getElementById('livemin').value,
+      model:document.getElementById('model').value,
+      ig_username:document.getElementById('iguser').value.trim(),
+      ig_password:document.getElementById('igpass').value,
+      llm_key:document.getElementById('llmkey').value.trim(),
+      auto_ig:document.getElementById('autoig').checked,
+      auto_yt:document.getElementById('autoyt').checked
+    })
+  }).then(r=>r.json()).then(d=>{
+    if(d.error){
+      alert(d.error);
+      document.getElementById('go').disabled=false;
+      document.getElementById('stopbtn').style.display='none';
+      document.getElementById('orb').classList.remove('fast');
+      WARP=1;return;
+    }
+    JOB=d.id;poll();
+    if(TIMER)clearInterval(TIMER);
+    TIMER=setInterval(poll,1500);
+  });
+}
+
+function stopJob(){
+  if(!JOB)return;
+  fetch(`/api/jobs/${JOB}/cancel`,{method:'POST'}).then(()=>{
+    if(TIMER){clearInterval(TIMER);TIMER=null;}
+    document.getElementById('status_txt').textContent='STOPPED BY USER';
+    document.getElementById('go').disabled=false;
+    document.getElementById('stopbtn').style.display='none';
+    document.getElementById('orb').classList.remove('fast');
+    document.getElementById('sys_state').textContent='PROCESS TERMINATED';
+    WARP=1;
+  });
+}
+
+function updateHUD(d){
+  document.getElementById('hud').style.display='block';
+  document.getElementById('status_txt').textContent=d.status.toUpperCase();
+  const pct=d.progress||0;
+  document.getElementById('status_pct').textContent=pct+'%';
+  document.getElementById('bar_fill').style.width=pct+'%';
+  const stg=d.stage||1;
+  for(let k=1;k<=6;k++){
+    const el=document.getElementById('stg'+k);
+    if(el)el.className='stg'+(k<stg||d.status==='done'?' done':(k===stg?' active':''));
+  }
+  if(d.ig_account)renderIGBadge(d.ig_account);
+}
+
+function poll(){
+  if(!JOB)return;
+  fetch('/api/jobs/'+JOB).then(r=>r.json()).then(d=>{
+    updateHUD(d);
+    if(document.activeElement && document.activeElement.classList.contains('cap'))return;
+    const sig=JSON.stringify(d.clips||[]);
+    if(sig!==LAST_CLIPS_SIG){
+      LAST_CLIPS_SIG=sig;
+      const cl=document.getElementById('clips');
+      cl.innerHTML='';
+      (d.clips||[]).forEach((c,i)=>{
+        const card=document.createElement('div');card.className='card';
+        const timeRange=fmtTime(c.start)+' → '+fmtTime(c.end)+' ('+Math.round(c.end-c.start)+'s)';
+        let actions='',upInfo='';
+        if(c.file){
+          actions+=`<button onclick="dl('${JOB}','${c.file}')">💾 SAVE</button>`;
+          actions+=`<button onclick="up('${JOB}',${i},'ig','cap_${JOB}_${i}')">${c.ig_status==='done'?'✅ IG POSTED':c.ig_status==='uploading'?'⏳ IG UPLOADING...':'📸 IG REEL'}</button>`;
+          if(c.ig_url)actions+=`<a class="btn-link" href="${c.ig_url}" target="_blank">↗ VIEW IG</a>`;
+          actions+=`<button onclick="up('${JOB}',${i},'yt','cap_${JOB}_${i}')">${c.yt_status==='done'?'✅ YT':c.yt_status==='uploading'?'⏳ YT...':'▶️ YT'}</button>`;
+        }
+        if(c.ig_status==='done')upInfo+=`<div class="ok-banner">✅ Uploaded to Instagram Reels ${c.ig_url?`(<a href="${c.ig_url}" target="_blank" style="color:#fff">Open Reel ↗</a>)`:''}</div>`;
+        if(c.ig_status&&c.ig_status.startsWith('error'))upInfo+=`<div class="err">IG: ${c.ig_status}</div>`;
+        if(c.yt_status&&c.yt_status.startsWith('error'))upInfo+=`<div class="err">YT: ${c.yt_status}</div>`;
+        card.innerHTML=
+          `<div class="glare"></div>`+
+          `<div class="vid-wrap">`+
+            `<div class="time-float">${timeRange}</div>`+
+            `<div class="badge-float">🔥 ${c.viral_score||88}% VIRAL</div>`+
+            `<div class="ttl-float">⏳ 48h TTL</div>`+
+            `${c.file?`<video src="/files/${JOB}/${c.file}" controls preload="metadata" playsinline></video>`
+                     :`<div class="vid-placeholder"><div class="holo-cube"></div><span>${c.status}…</span></div>`}`+
+          `</div>`+
+          `<div class="info">`+
+            `<h3>${c.title||'Synthesizing 9:16 Reel…'}</h3>`+
+            `${c.reason?`<div class="reason">⚡ ${c.reason}</div>`:''}`+
+            `${c.caption?`<textarea class="cap" id="cap_${JOB}_${i}">${c.caption}</textarea>`:''}`+
+            `${upInfo}`+
+            `<div class="actions">${actions}</div>`+
+          `</div>`;
+        cl.appendChild(card);
+        bindTilt(card,10);
+      });
+      loadVault();
+    }
+    if(d.status==='done'||d.status.startsWith('error')||d.status==='stopped by user'){
+      clearInterval(TIMER);TIMER=null;
+      document.getElementById('go').disabled=false;
+      document.getElementById('stopbtn').style.display='none';
+      document.getElementById('orb').classList.remove('fast');
+      document.getElementById('sys_state').textContent=d.status==='done'?'CUT & IG UPLOAD COMPLETE':'PIPELINE IDLE';
+      WARP=1;
+      loadVault();
+    }
+  });
+}
+
+// --- AI Edited Reels Vault (with 2-day auto-expiry countdown) ---
+function fmtTTL(sec){
+  const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);
+  if(h>=24){const d=Math.floor(h/24),rh=h%24;return `${d}d ${rh}h left`;}
+  return `${h}h ${m}m left`;
+}
+
+function loadVault(){
+  if(document.activeElement && document.activeElement.classList.contains('cap'))return;
+  fetch('/api/reels').then(r=>r.json()).then(d=>{
+    if(d.ig_account)renderIGBadge(d.ig_account);
+    const list=d.reels||[];
+    document.getElementById('vault_count').textContent=list.length;
+    const vg=document.getElementById('vault_grid');
+    if(!list.length){
+      vg.innerHTML=`<div class="empty-vault" style="grid-column:1/-1">No AI-edited reels in vault yet. Launch a neural cut above — generated reels appear here, auto-upload to Instagram first, and auto-delete after 48 hours.</div>`;
+      return;
+    }
+    vg.innerHTML='';
+    list.forEach(r=>{
+      const card=document.createElement('div');card.className='card';
+      const timeRange=fmtTime(r.start)+' → '+fmtTime(r.end)+' ('+Math.round(r.end-r.start)+'s)';
+      const capId=`vcap_${r.job_id}_${r.idx}`;
+      let upInfo='';
+      if(r.ig_status==='done')upInfo+=`<div class="ok-banner">✅ Uploaded to Instagram Reels ${r.ig_url?`(<a href="${r.ig_url}" target="_blank" style="color:#fff">Open Reel ↗</a>)`:''}</div>`;
+      if(r.ig_status&&r.ig_status.startsWith('error'))upInfo+=`<div class="err">IG: ${r.ig_status}</div>`;
+      if(r.yt_status&&r.yt_status.startsWith('error'))upInfo+=`<div class="err">YT: ${r.yt_status}</div>`;
+      card.innerHTML=
+        `<div class="glare"></div>`+
+        `<div class="vid-wrap">`+
+          `<div class="time-float">${timeRange}</div>`+
+          `<div class="badge-float">🔥 ${r.viral_score||88}% VIRAL</div>`+
+          `<div class="ttl-float">⏳ ${fmtTTL(r.remaining_seconds)}</div>`+
+          `<video src="/files/${r.job_id}/${r.file}" controls preload="metadata" playsinline></video>`+
+        `</div>`+
+        `<div class="info">`+
+          `<h3>${r.title}</h3>`+
+          `${r.reason?`<div class="reason">⚡ ${r.reason}</div>`:''}`+
+          `<textarea class="cap" id="${capId}">${r.caption||''}</textarea>`+
+          `${upInfo}`+
+          `<div class="actions">`+
+            `<button onclick="dl('${r.job_id}','${r.file}')">💾 SAVE</button>`+
+            `<button onclick="up('${r.job_id}',${r.idx},'ig','${capId}')">${r.ig_status==='done'?'✅ IG POSTED':r.ig_status==='uploading'?'⏳ IG...':'📸 IG REEL'}</button>`+
+            `${r.ig_url?`<a class="btn-link" href="${r.ig_url}" target="_blank">↗ VIEW</a>`:''}`+
+            `<button onclick="up('${r.job_id}',${r.idx},'yt','${capId}')">${r.yt_status==='done'?'✅ YT':r.yt_status==='uploading'?'⏳ YT...':'▶️ YT'}</button>`+
+            `<button class="btn-del" onclick="delReel('${r.job_id}','${r.file}')" title="Delete now">🗑️</button>`+
+          `</div>`+
+        `</div>`;
+      vg.appendChild(card);
+      bindTilt(card,10);
+    });
+  });
+}
+
+function up(jid,i,p,capId){
+  const capEl=document.getElementById(capId);
+  fetch(`/api/jobs/${jid}/upload/${i}/${p}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      ig_username:document.getElementById('iguser').value.trim(),
+      ig_password:document.getElementById('igpass').value,
+      caption:capEl?capEl.value:''
+    })
+  }).then(()=>{
+    if(JOB===jid && !TIMER)TIMER=setInterval(poll,1500);
+    setTimeout(loadVault,800);
+  });
+}
+
+function delReel(jid,file){
+  fetch(`/api/reels/${jid}/${file}`,{method:'DELETE'}).then(()=>loadVault());
+}
+
+function dl(jid,f){window.open(`/files/${jid}/${f}`)}
+function fmtTime(s){const m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+String(sec).padStart(2,'0')}
+
+loadVault();
+setInterval(loadVault,15000);
+</script>
+</body>
+</html>
