@@ -1,0 +1,12 @@
+flask
+python-dotenv
+yt-dlp
+faster-whisper
+numpy
+requests
+google-api-python-client
+google-auth-oauthlib
+anthropic
+instagrapi
+Pillow
+instagrapi
