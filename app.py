@@ -370,7 +370,7 @@ def run_job(job_id, url, n_reels, live_min, model_size, auto_ig, auto_yt, spicy_
                 threading.Thread(target=_upload_yt, args=(job_id, i, out_path), daemon=True).start()
             return i
 
-        workers = min(6, total)
+        workers = 1 if os.environ.get("RENDER") else min(6, total)
         with ThreadPoolExecutor(max_workers=workers) as ex:
             futs = [ex.submit(_render_one, i, clip) for i, clip in enumerate(clips)]
             for fut in as_completed(futs):
