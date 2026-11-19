@@ -261,9 +261,13 @@ def run_job(job_id, url, n_reels, live_min, model_size, auto_ig, auto_yt, spicy_
         topic_tag = f" [Topic: {topic}]" if topic else ""
         src_label = f" ({job['source_title'][:34]}…)" if job.get("source_title") else ""
         job.update({"status": f"ingesting stream{topic_tag}{src_label}…", "stage": 1, "progress": 10})
-        video = pipeline.download(url, out_dir, live_min, job_id=job_id, n_reels=n_reels)
+        video = pipeline.download(
+            url, out_dir, live_min, job_id=job_id, n_reels=n_reels,
+            topic=topic, source_title=job.get("source_title", ""),
+            on_status=lambda msg: job.update({"status": msg})
+        )
         detected_src_title = pipeline.read_source_title(out_dir) or job.get("source_title") or ""
-        if detected_src_title and not job.get("source_title"):
+        if detected_src_title:
             job["source_title"] = detected_src_title
         pipeline.check_cancelled(job_id)
         job.update({"status": "analyzing vocal energy & vectorized RMS wave…", "stage": 2, "progress": 22})
@@ -436,21 +440,32 @@ def _upload_ig(job_id, idx, path):
     clip = _find_or_load_clip(job_id, idx)
     if not clip:
         return
-    try:
-        clip["ig_status"] = "uploading"
-        _save_job_meta(job_id)
-        user, password = _get_ig_creds(job_id)
-        if user and password or uploaders.IG_STATUS.get("connected"):
-            res = uploaders.instagram_login(path, clip["caption"], user, password)
-            if res.get("url"):
-                clip["ig_url"] = res["url"]
-        else:
-            base = os.getenv("PUBLIC_BASE_URL", "").rstrip("/")
-            video_url = f"{base}/files/{job_id}/{clip['file']}"
-            uploaders.instagram(video_url, clip["caption"])
-        clip["ig_status"] = "done"
-    except Exception as e:
-        clip["ig_status"] = f"error: {e}"
+    last_err = None
+    for attempt in range(2):
+        try:
+            clip["ig_status"] = "uploading" if attempt == 0 else "retrying upload…"
+            _save_job_meta(job_id)
+            user, password = _get_ig_creds(job_id)
+            if user and password or uploaders.IG_STATUS.get("connected"):
+                res = uploaders.instagram_login(path, clip["caption"], user, password)
+                if res.get("url"):
+                    clip["ig_url"] = res["url"]
+            else:
+                base = os.getenv("PUBLIC_BASE_URL", "").rstrip("/")
+                video_url = f"{base}/files/{job_id}/{clip['file']}"
+                uploaders.instagram(video_url, clip["caption"])
+            clip["ig_status"] = "done"
+            _save_job_meta(job_id)
+            return
+        except Exception as e:
+            last_err = e
+            err_s = str(e).lower()
+            # Only auto-retry transient network/transcode timeouts (not auth/challenge/bad-password errors)
+            if attempt == 0 and any(k in err_s for k in ("timeout", "connection", "transcode", "500", "502", "503", "504", "reset")):
+                time.sleep(3.0)
+                continue
+            break
+    clip["ig_status"] = f"error: {last_err}"
     _save_job_meta(job_id)
 
 def _upload_yt(job_id, idx, path):
