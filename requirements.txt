@@ -1,4 +1,5 @@
 flask
+gunicorn
 python-dotenv
 yt-dlp
 faster-whisper
@@ -9,4 +10,3 @@ google-auth-oauthlib
 anthropic
 instagrapi
 Pillow
-instagrapi
