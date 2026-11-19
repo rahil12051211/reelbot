@@ -1,42 +1,43 @@
+---
+title: ReelBot Neural 3D Studio
+emoji: 🎬
+colorFrom: cyan
+colorTo: pink
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🎬 ReelBot // Neural 3D Studio
 
-AI-powered live stream & VOD short-form clipper that detects viral moments, burns dynamic word-highlighted 9:16 karaoke captions, and auto-publishes to **Instagram Reels** and **YouTube Shorts**.
+AI-powered live stream & VOD short-form clipper that detects viral & cheatcode moments (including 3-hour streams & 18+ age-restricted content), renders Full HD `1080×1920` vertical reels with reference-matched streamer reaction layouts, trending background songs, anti-copyright transforms, and auto-publishes directly to **Instagram Reels** and **YouTube Shorts**.
 
-## 🌐 Live Hosted Deployment & Mobile Access
+## 🌐 Deployment & Access
 
-- **Live Public HTTPS App (Mobile & Desktop Anywhere)**: [https://6da92fbb6fcd9f.app.lhr.life](https://6da92fbb6fcd9f.app.lhr.life)
-- **Local Wi-Fi Mobile Access (Same Network)**: `http://192.168.1.28:5000`
-- **Local Desktop Access**: `http://127.0.0.1:5000`
 - **GitHub Repository**: [https://github.com/rahil12051211/reelbot](https://github.com/rahil12051211/reelbot)
+- **Recommended 100% Free Always-On Cloud Host**: **Hugging Face Spaces (Docker — Free Forever, 16 GB RAM, 2 vCPU, 50 GB Disk, FFmpeg + Whisper)**
+- **Local Desktop Access**: `http://127.0.0.1:5000`
 
 ---
 
 ## ⚡ Features
 
-1. **Instant Live Stream DVR Burst (`~4.7s` for `60s` of live stream)**:
-   - Resolves direct HLS live manifests and uses `ffmpeg -live_start_index` to pull buffered CDN segments at full network speed without waiting in real time.
-2. **Multi-Factor Hook Detection + LLM Viral Re-Ranking**:
-   - Scores acoustic RMS spikes, opening 5-second hook energy, speech pace, viral trigger words, and natural sentence boundaries, with optional Claude / xAI Grok re-ranking.
-3. **Lightning Parallel 9:16 Rendering (Cinema 80% Vertical Zoom)**:
-   - Renders all `N` reels in parallel (`ThreadPoolExecutor`) with fast low-res ambient blur background, 80% vertical height foreground zoom, and yellow word-by-word karaoke `.ass` captions.
-4. **Non-Blocking Instagram 2FA & Email/SMS Challenge Login + Auto-Upload First**:
-   - Connects directly via Instagram username, password, and 6-digit Email/SMS challenge or 2FA code, caching `ig_session_<username>.json` and uploading reels automatically right after rendering.
-5. **AI Edited Reels Vault with 48-Hour Auto-Purge**:
-   - Displays all AI-created reels with a live countdown (`48h TTL`) and automatically deletes reels older than 2 days.
+1. **3-Hour Stream Hyper-Pipeline + 20-Reel Turbo Engine**:
+   - Parallel Audio-First Ingest + HTTP Byte-Range Heatmap Cloud-Seek + 4ms vectorized `np.einsum` RMS Wave + Acoustic-Hotspot `clip_timestamps` Whisper acceleration + `O(N)` Prefix-Sum Viral Cortex.
+2. **Exact Reference Viral Edit Styles + Full-Color Emojis**:
+   - **`⬛ Speed Black-Bar Reaction`**: Pitch-black `1080×1920` canvas with 3-line top white headline + full-color emojis, centered stream frame, lower-frame subtitles, and moving rounded Instagram `@HANDLE` watermark.
+   - **`📱 Lacy Split-Cam + Gameplay`**: Auto-detected top 35% streamer facecam stacked over bottom 65% gameplay/map view with 2-line seam headline + full-color emojis.
+3. **Trending Background Songs Engine**:
+   - Automatically matches copyright-safe trending beats (`🔥 Drift Phonk 808`, `🌴 GTA 6 Vice City Synthwave`, `👀 Viral Mystery Pluck`, `😭 Slowed + Reverb Vibe`, `🌶️ Late-Night Spicy Bounce`) to each reel's mood with vocal-pocket ducking.
+4. **4-Layer Zero-Duplicate 200-Reel Strict-Topic Autopilot**:
+   - Discovers 70–100+ unique YouTube videos strictly on your chosen topic, enforces `0.0s` frame overlap, 3-word dialogue shingle dedup, and 200+ unique headlines/captions, then closes all files & shuts down after 200 uploads.
+5. **5-Minute Auto-Refreshing Trending Bar & Fastest Parallel Instagram Uploader**:
+   - Auto-rotates fresh trending waves every 5 minutes (`05:00` countdown), connects via non-blocking IG 2FA/Email challenge, runs 2 parallel Instagram upload workers (`configure_timeout=1.2s`), and maintains a 48-hour auto-purging Reels Vault.
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Deploy 100% Free Forever (16 GB RAM, No Credit Card) on Hugging Face Spaces
 
-```bash
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env
-python app.py
-```
-
-To expose a fresh public HTTPS URL for mobile access anytime:
-```bash
-ssh -o StrictHostKeyChecking=no -R 80:127.0.0.1:5000 nokey@localhost.run
-```
+1. Go to [https://huggingface.co/new-space](https://huggingface.co/new-space)
+2. Name: `reelbot` · SDK: **Docker** (Blank) · Hardware: **CPU Basic (Free — 2 vCPU, 16 GB RAM)**
+3. Push this repository (`https://github.com/rahil12051211/reelbot`) to your Space — it builds automatically with `ffmpeg`, `faster-whisper`, and `gunicorn` on port `7860`!
