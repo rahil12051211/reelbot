@@ -1,4 +1,4 @@
-import subprocess, sys, os, re, json, math, ctypes, shutil, hashlib, threading, random
+import subprocess, sys, os, re, json, math, time, ctypes, shutil, hashlib, threading, random
 import numpy as np
 import yt_dlp
 
@@ -121,7 +121,7 @@ def _get_model(size="tiny", force_cpu=False):
     key = f"{size}:{device}"
     if _whisper_model is None or _whisper_model_key != key:
         from faster_whisper import WhisperModel
-        threads = max(4, os.cpu_count() or 4)
+        threads = 2 if os.environ.get("RENDER") else max(4, os.cpu_count() or 4)
         _whisper_model = WhisperModel(size, device=device, compute_type="int8", cpu_threads=threads)
         _whisper_model_key = key
     return _whisper_model
