@@ -1,22 +1,39 @@
----
-title: ReelBot Neural 3D Studio
-emoji: 🎬
-colorFrom: cyan
-colorTo: pink
-sdk: docker
-app_port: 7860
-pinned: false
----
+<div align="center">
 
 # 🎬 ReelBot // Neural 3D Studio
 
-AI-powered live stream & VOD short-form clipper that detects viral & cheatcode moments (including 3-hour streams & 18+ age-restricted content), renders Full HD `1080×1920` vertical reels with reference-matched streamer reaction layouts, trending background songs, anti-copyright transforms, and auto-publishes directly to **Instagram Reels** and **YouTube Shorts**.
+### 1-Click Cloud Launch — Works Anytime on Mobile & PC (Zero Restart Needed)
 
-## 🌐 Deployment & Access
+<a href="https://reelbot-edkr.onrender.com" target="_blank">
+  <img src="https://img.shields.io/badge/%F0%9F%9A%80%20LAUNCH%20REELBOT%20(MOBILE%20%26%20PC)-OPEN%20LIVE%20APP-00f2fe?style=for-the-badge&logo=rocket&logoColor=white&labelColor=090d22" alt="Launch ReelBot on Mobile and PC" height="48"/>
+</a>
 
-- **GitHub Repository**: [https://github.com/rahil12051211/reelbot](https://github.com/rahil12051211/reelbot)
-- **Recommended 100% Free Always-On Cloud Host**: **Hugging Face Spaces (Docker — Free Forever, 16 GB RAM, 2 vCPU, 50 GB Disk, FFmpeg + Whisper)**
-- **Local Desktop Access**: `http://127.0.0.1:5000`
+<br/>
+
+<a href="https://reelbot-edkr.onrender.com" target="_blank">
+  <img src="https://img.shields.io/badge/%F0%9F%93%B1%20OPEN%20ON%20MOBILE-https%3A%2F%2Freelbot--edkr.onrender.com-ff007f?style=for-the-badge&labelColor=130a24" alt="Open on Mobile"/>
+</a>
+&nbsp;
+<a href="https://reelbot-edkr.onrender.com" target="_blank">
+  <img src="https://img.shields.io/badge/%F0%9F%92%BB%20OPEN%20ON%20PC-https%3A%2F%2Freelbot--edkr.onrender.com-00ff9d?style=for-the-badge&labelColor=0a1c1a" alt="Open on PC"/>
+</a>
+
+<br/><br/>
+
+**Direct Link:** [https://reelbot-edkr.onrender.com](https://reelbot-edkr.onrender.com)
+
+<sub><i>Hosted 100% Free on Render Docker (`ffmpeg` + `faster-whisper`). If asleep after 15 min of inactivity, wait ~45s on first tap and it wakes up automatically.</i></sub>
+
+</div>
+
+---
+
+## 🌐 All Access Links
+
+- **📱 Mobile & 💻 PC (Permanent Live Cloud App)**: **[https://reelbot-edkr.onrender.com](https://reelbot-edkr.onrender.com)**
+- **⚡ Local PC Studio (Full 6-Worker Turbo Speed)**: `http://127.0.0.1:5000`
+- **📶 Same Wi-Fi Mobile Access**: `http://192.168.1.28:5000`
+- **🔗 GitHub Repository**: **[https://github.com/rahil12051211/reelbot](https://github.com/rahil12051211/reelbot)**
 
 ---
 
@@ -32,12 +49,4 @@ AI-powered live stream & VOD short-form clipper that detects viral & cheatcode m
 4. **4-Layer Zero-Duplicate 200-Reel Strict-Topic Autopilot**:
    - Discovers 70–100+ unique YouTube videos strictly on your chosen topic, enforces `0.0s` frame overlap, 3-word dialogue shingle dedup, and 200+ unique headlines/captions, then closes all files & shuts down after 200 uploads.
 5. **5-Minute Auto-Refreshing Trending Bar & Fastest Parallel Instagram Uploader**:
-   - Auto-rotates fresh trending waves every 5 minutes (`05:00` countdown), connects via non-blocking IG 2FA/Email challenge, runs 2 parallel Instagram upload workers (`configure_timeout=1.2s`), and maintains a 48-hour auto-purging Reels Vault.
-
----
-
-## 🚀 Deploy 100% Free Forever (16 GB RAM, No Credit Card) on Hugging Face Spaces
-
-1. Go to [https://huggingface.co/new-space](https://huggingface.co/new-space)
-2. Name: `reelbot` · SDK: **Docker** (Blank) · Hardware: **CPU Basic (Free — 2 vCPU, 16 GB RAM)**
-3. Push this repository (`https://github.com/rahil12051211/reelbot`) to your Space — it builds automatically with `ffmpeg`, `faster-whisper`, and `gunicorn` on port `7860`!
+   - Auto-rotates fresh trending waves every 5 minutes (`05:00` countdown), connects via non-blocking IG 2FA/Email challenge, runs parallel Instagram upload workers (`configure_timeout=1.2s`), and maintains a 48-hour auto-purging Reels Vault.
