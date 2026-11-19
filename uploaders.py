@@ -1,8 +1,35 @@
 import os, time, json, glob, subprocess, threading, requests
 
 _ig_lock = threading.Lock()
+_ig_upload_sem = threading.Semaphore(2)  # Allow 2 concurrent Reel uploads for maximum bandwidth throughput
 _ig_client = None
 _ig_user = None
+_uploaded_cover_ids = set()
+
+def _optimize_ig_client(cl):
+    """Strip artificial instagrapi delays, enable connection pooling, and deduplicate cover photo_rupload on configure retries."""
+    cl.delay_range = [0, 0]
+    cl.request_timeout = 20
+    try:
+        from requests.adapters import HTTPAdapter
+        adapter = HTTPAdapter(pool_connections=10, pool_maxsize=10, max_retries=2)
+        cl.private.mount("https://", adapter)
+        cl.private.mount("http://", adapter)
+    except Exception:
+        pass
+    orig_photo_rupload = getattr(cl, "photo_rupload", None)
+    if orig_photo_rupload and not getattr(cl, "_fast_rupload_patched", False):
+        def _cached_photo_rupload(path, upload_id="", *args, **kwargs):
+            key = f"{upload_id}_{path}"
+            if upload_id and key in _uploaded_cover_ids:
+                return upload_id, 1080, 1920
+            res = orig_photo_rupload(path, upload_id, *args, **kwargs)
+            if upload_id:
+                _uploaded_cover_ids.add(key)
+            return res
+        cl.photo_rupload = _cached_photo_rupload
+        cl._fast_rupload_patched = True
+    return cl
 
 # Non-blocking Email/SMS Challenge & 2FA state
 _challenge_wait_event = threading.Event()
@@ -14,10 +41,13 @@ _pending_user = None
 
 IG_STATUS = {"connected": False, "username": "", "full_name": "", "needs_2fa": False, "error": ""}
 
+def _session_dir():
+    return "/tmp" if os.environ.get("VERCEL") else os.path.dirname(__file__)
+
 def _try_autoload_session():
     """Auto-restore saved Instagram session on startup if available."""
     global _ig_client, _ig_user, IG_STATUS
-    base_dir = os.path.dirname(__file__)
+    base_dir = _session_dir()
     sessions = sorted(glob.glob(os.path.join(base_dir, "ig_session_*.json")), key=os.path.getmtime, reverse=True)
     if not sessions:
         return
@@ -26,7 +56,7 @@ def _try_autoload_session():
     try:
         from instagrapi import Client
         cl = Client()
-        cl.delay_range = [0, 0]
+        _optimize_ig_client(cl)
         cl.load_settings(sess_file)
         if cl.user_id:
             _ig_client = cl
@@ -81,7 +111,7 @@ def verify_instagram(username=None, password=None, code=None):
         from instagrapi.exceptions import (
             BadPassword, ChallengeRequired, TwoFactorRequired, LoginRequired,
         )
-        session = os.path.join(os.path.dirname(__file__), f"ig_session_{username}.json")
+        session = os.path.join(_session_dir(), f"ig_session_{username}.json")
 
         def _custom_challenge_handler(uname, choice):
             global IG_STATUS, _waiting_for_challenge, _submitted_code
@@ -130,7 +160,7 @@ def verify_instagram(username=None, password=None, code=None):
                 cl.login(username, password)
 
             cl.dump_settings(session)
-            cl.delay_range = [0.5, 1.2]
+            _optimize_ig_client(cl)
             _ig_client = cl
             _ig_user = username
             _pending_cl = None
@@ -187,22 +217,38 @@ def verify_instagram(username=None, password=None, code=None):
     return IG_STATUS
 
 def instagram_login(path, caption, username=None, password=None):
-    """Post a local mp4 as a Reel using the connected Instagram session or username/password."""
+    """
+    Turbo Parallel Instagram Reel Uploader:
+    - Uses configure_timeout=1.2 (eliminating instagrapi's default 10s-20s sleep per poll)
+    - Caches photo_rupload per upload_id so cover thumbnails are never re-uploaded on transcode polls
+    - Supports 2 concurrent upload workers via _ig_upload_sem for maximum upload throughput.
+    """
     global _ig_client, _ig_user, IG_STATUS
     username = (username or _ig_user or os.getenv("IG_USERNAME") or "").strip().lstrip("@")
     password = password or os.getenv("IG_PASSWORD") or ""
-    if _ig_client is None or (username and _ig_user != username):
-        st = verify_instagram(username, password)
-        if not st.get("connected"):
-            raise RuntimeError(st.get("error") or "Instagram login failed")
+    with _ig_lock:
+        if _ig_client is None or (username and _ig_user != username):
+            st = verify_instagram(username, password)
+            if not st.get("connected"):
+                raise RuntimeError(st.get("error") or "Instagram login failed")
+        _optimize_ig_client(_ig_client)
 
     thumb = path.rsplit(".", 1)[0] + ".jpg"
-    subprocess.run(["ffmpeg", "-y", "-ss", "1", "-i", path, "-frames:v", "1", thumb], capture_output=True)
-    thumb_arg = thumb if os.path.exists(thumb) else None
-
-    with _ig_lock:
+    if not os.path.exists(thumb):
+        subprocess.run(["ffmpeg", "-y", "-ss", "0.5", "-i", path, "-frames:v", "1", thumb], capture_output=True)
+    # Use a dedicated cover copy so instagrapi's crop_thumbnail never mutates the Vault's display thumbnail
+    ig_cover = path.rsplit(".", 1)[0] + "_igcover.jpg"
+    if os.path.exists(thumb):
         try:
-            media = _ig_client.clip_upload(path, caption, thumbnail=thumb_arg)
+            import shutil
+            shutil.copy2(thumb, ig_cover)
+        except Exception:
+            ig_cover = thumb
+    thumb_arg = ig_cover if os.path.exists(ig_cover) else (thumb if os.path.exists(thumb) else None)
+
+    with _ig_upload_sem:
+        try:
+            media = _ig_client.clip_upload(path, caption, thumbnail=thumb_arg, configure_timeout=1.2)
             code = getattr(media, "code", None)
             pk = getattr(media, "pk", None)
             url = f"https://www.instagram.com/reel/{code}/" if code else ""
@@ -210,6 +256,10 @@ def instagram_login(path, caption, username=None, password=None):
         except Exception as e:
             msg = str(e).replace(password, "***") if password else str(e)
             raise RuntimeError(msg) from None
+        finally:
+            if ig_cover != thumb and os.path.exists(ig_cover):
+                try: os.remove(ig_cover)
+                except Exception: pass
 
 def instagram(video_url, caption):
     uid = os.getenv("IG_USER_ID")
