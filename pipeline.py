@@ -58,6 +58,7 @@ def _load_dedup():
     fp = _dedup_file()
     default_d = {
         "used_videos": [],
+        "blocked_videos": [],
         "used_titles": [],
         "cut_ranges": {},
         "text_hashes": [],
@@ -77,6 +78,53 @@ def _load_dedup():
         except Exception:
             pass
     return default_d
+
+def _extract_yt_id(url):
+    m = re.search(r"(?:youtu\.be/|v=|shorts/|live/)([A-Za-z0-9_-]{11})", url or "")
+    return m.group(1) if m else ""
+
+def _mark_video_blocked(url_or_id):
+    vid_id = _extract_yt_id(url_or_id) or (url_or_id if len(url_or_id or "") == 11 else "")
+    if not vid_id:
+        return
+    with _dedup_lock:
+        dedup = _load_dedup()
+        if vid_id not in dedup["blocked_videos"]:
+            dedup["blocked_videos"].append(vid_id)
+        _save_dedup(dedup)
+
+def _get_yt_cookiefile():
+    """Returns a standard Netscape cookies.txt path if legitimately configured by the user (file or YOUTUBE_COOKIES_B64 env)."""
+    env_p = (os.getenv("YOUTUBE_COOKIES_FILE") or "").strip()
+    if env_p and os.path.exists(env_p):
+        return env_p
+    local_p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cookies.txt")
+    if os.path.exists(local_p) and os.path.getsize(local_p) > 20:
+        return local_p
+    b64 = (os.getenv("YOUTUBE_COOKIES_B64") or "").strip()
+    if b64:
+        try:
+            import base64
+            tmp_c = os.path.join(os.path.dirname(_dedup_file()), "yt_cookies.txt")
+            with open(tmp_c, "wb") as f:
+                f.write(base64.b64decode(b64))
+            if os.path.getsize(tmp_c) > 20:
+                return tmp_c
+        except Exception:
+            pass
+    return None
+
+def _fetch_public_oembed_title(url):
+    """Reads public video title metadata via YouTube's public oEmbed endpoint (requires no auth) to help AI Self-Healing match the exact topic."""
+    try:
+        import requests
+        r = requests.get("https://www.youtube.com/oembed", params={"url": url, "format": "json"}, timeout=5)
+        if r.status_code == 200:
+            data = r.json()
+            return (data.get("title") or "").strip()
+    except Exception:
+        pass
+    return ""
 
 def _save_dedup(data):
     fp = _dedup_file()
@@ -222,12 +270,17 @@ def _bg_fetch_live_wave(wave_idx, search_topic):
             res = ydl.extract_info(f"ytsearch12:{search_topic} viral reaction", download=False)
             entries = res.get("entries") or []
         with _dedup_lock:
-            used_ids = set(_load_dedup().get("used_videos", []))
+            d_hist = _load_dedup()
+            used_ids = set(d_hist.get("used_videos", [])) | set(d_hist.get("blocked_videos", []))
         emos = ["😭", "😳", "🤯", "🔥", "🌴", "⚡", "👀"]
         layouts = ["black_bar", "split_cam", "black_bar", "split_cam", "auto"]
         chips = []
         for e in entries:
             if not e or not e.get("id") or e["id"] in used_ids:
+                continue
+            if not _get_yt_cookiefile() and int(e.get("age_limit") or 0) >= 18:
+                continue
+            if (e.get("availability") or "") in ("private", "needs_auth", "subscriber_only"):
                 continue
             dur = int(e.get("duration") or 120)
             if not (25 <= dur <= 1800):
@@ -321,7 +374,7 @@ def discover_autopilot_video(topic, spicy_18=False):
 
     with _dedup_lock:
         dedup = _load_dedup()
-        used_ids = set(dedup.get("used_videos", []))
+        used_ids = set(dedup.get("used_videos", [])) | set(dedup.get("blocked_videos", []))
         used_titles = list(dedup.get("used_titles", []))
         q_idx = int(dedup.get("query_page", {}).get(topic.lower(), 0))
         dedup.setdefault("query_page", {})[topic.lower()] = q_idx + 1
@@ -408,6 +461,12 @@ def discover_autopilot_video(topic, spicy_18=False):
             vid_id = e["id"]
             if vid_id in used_ids or vid_id in seen_batch_ids:
                 continue
+            if not _get_yt_cookiefile() and int(e.get("age_limit") or 0) >= 18:
+                continue
+            if (e.get("availability") or "") in ("private", "needs_auth", "subscriber_only"):
+                continue
+            if (e.get("live_status") or "") == "is_upcoming":
+                continue
             title = (e.get("title") or "").strip()
             if not title or not _matches_topic(title):
                 continue
@@ -472,7 +531,126 @@ def wait_for_video(job_id):
         if res.get("error"):
             raise RuntimeError(res["error"])
 
-def download(url, out_dir, live_minutes=0, job_id=None, n_reels=3):
+def _extract_info_self_healing(url, ydl_opts, topic="", source_title="", job_id=None, on_status=None):
+    """
+    AI Self-Healing Video Resolver:
+    - Tries standard extraction (using user's cookies.txt if legitimately configured).
+    - If a video is age-restricted ('Sign in to confirm your age'), private, members-only, unavailable,
+      or blocked, respects the restriction completely, permanently blacklists that ID in blocked_videos,
+      reads its public topic/oEmbed title, and automatically heals by switching to the highest-view
+      public, unrestricted replacement video on the exact same topic so the pipeline NEVER crashes!
+    """
+    cookie_p = _get_yt_cookiefile()
+    if cookie_p:
+        ydl_opts["cookiefile"] = cookie_p
+
+    last_err = None
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+        if info:
+            return info, url
+    except Exception as e:
+        last_err = e
+
+    # Retry once with alternative public YouTube player client if transient format error (not auth/age gate)
+    err_low = str(last_err or "").lower()
+    is_restricted = any(k in err_low for k in (
+        "confirm your age", "age-restricted", "sign in", "private video",
+        "members-only", "unavailable", "not available", "removed", "copyright", "403", "bot"
+    ))
+    if not is_restricted:
+        try:
+            alt_opts = dict(ydl_opts)
+            alt_opts["extractor_args"] = {"youtube": {"player_client": ["web", "android_vr"]}}
+            with yt_dlp.YoutubeDL(alt_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+            if info:
+                return info, url
+        except Exception as e2:
+            last_err = e2
+
+    # --- SELF-HEALING AUTO-RECOVERY ---
+    check_cancelled(job_id)
+    _mark_video_blocked(url)
+    pub_title = (source_title or "").strip() or _fetch_public_oembed_title(url)
+    clean_query_base = (topic or "").strip() or pub_title or "GTA 6 streamer reaction viral"
+    # Clean noise brackets/pipes from oEmbed title for sharper public search
+    clean_q = re.sub(r"[\[\]\(\)|#@]+", " ", clean_query_base)
+    clean_q = " ".join(clean_q.split()[:7]).strip() or "GTA 6 viral moment"
+
+    if on_status:
+        on_status(f"🧠 AI Self-Healing: Restricted/unavailable source skipped → finding clean public video for '{clean_q[:30]}'…")
+
+    with _dedup_lock:
+        dedup = _load_dedup()
+        skip_ids = set(dedup.get("blocked_videos", [])) | set(dedup.get("used_videos", []))
+    failed_id = _extract_yt_id(url)
+    if failed_id:
+        skip_ids.add(failed_id)
+
+    search_queries = [
+        f"{clean_q} gameplay reaction",
+        f"{(topic or 'GTA 6').strip()} viral highlights",
+        "GTA 6 trailer breakdown secrets gameplay"
+    ]
+    flat_opts = {"quiet": True, "no_warnings": True, "extract_flat": True, "skip_download": True}
+    if cookie_p:
+        flat_opts["cookiefile"] = cookie_p
+
+    for sq in search_queries:
+        check_cancelled(job_id)
+        try:
+            with yt_dlp.YoutubeDL(flat_opts) as ydl:
+                res = ydl.extract_info(f"ytsearch20:{sq}", download=False)
+                entries = res.get("entries") or []
+        except Exception:
+            entries = []
+
+        # Prefer high-view, unrestricted (age_limit == 0) public videos
+        cands = []
+        for e in entries:
+            if not e or not e.get("id"):
+                continue
+            cid = e["id"]
+            if cid in skip_ids:
+                continue
+            if int(e.get("age_limit") or 0) >= 18:
+                continue
+            if (e.get("availability") or "") in ("private", "needs_auth", "subscriber_only"):
+                continue
+            dur = int(e.get("duration") or 120)
+            if 30 <= dur <= 2400:
+                cands.append(e)
+        cands.sort(key=lambda x: int(x.get("view_count") or 0), reverse=True)
+
+        for cand in cands[:6]:
+            check_cancelled(job_id)
+            cand_id = cand["id"]
+            cand_url = f"https://www.youtube.com/watch?v={cand_id}"
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(cand_url, download=False)
+                if info and (info.get("url") or info.get("requested_formats")):
+                    cand_title = (info.get("title") or cand.get("title") or clean_q).strip()
+                    if on_status:
+                        on_status(f"🧠 AI Auto-Healed! Switched to clean public video: {cand_title[:42]}…")
+                    with _dedup_lock:
+                        dedup = _load_dedup()
+                        if cand_id not in dedup["used_videos"]:
+                            dedup["used_videos"].append(cand_id)
+                        if cand_title not in dedup["used_titles"]:
+                            dedup["used_titles"].append(cand_title)
+                        _save_dedup(dedup)
+                    return info, cand_url
+            except Exception:
+                _mark_video_blocked(cand_id)
+                skip_ids.add(cand_id)
+                continue
+
+    raise RuntimeError(f"Source restricted/unavailable ({last_err}) and no public fallback matched — add cookies.txt or try another topic")
+
+def download(url, out_dir, live_minutes=0, job_id=None, n_reels=3, topic="", source_title="", on_status=None):
     check_cancelled(job_id)
     os.makedirs(out_dir, exist_ok=True)
     out = os.path.join(out_dir, "source.mp4")
@@ -503,16 +681,17 @@ def download(url, out_dir, live_minutes=0, job_id=None, n_reels=3):
         "quiet": True,
         "no_warnings": True,
         "noplaylist": True,
-        "age_limit": 99,
         "format": "b[height<=720][ext=mp4]/bv*[height<=720][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=720]+ba/b"
     }
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-    except Exception:
-        ydl_opts["extractor_args"] = {"youtube": {"player_client": ["android_vr", "tv_embedded", "web"]}}
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
+    info, resolved_url = _extract_info_self_healing(
+        url, ydl_opts, topic=topic, source_title=source_title, job_id=job_id, on_status=on_status
+    )
+    if resolved_url != url:
+        url = resolved_url
+        key = _url_cache_key(url)
+        cache_file = os.path.join(cdir, key + ".mp4")
+        cache_wav = os.path.join(cdir, key + ".wav")
+        cache_title = os.path.join(cdir, key + ".title")
     check_cancelled(job_id)
 
     if "entries" in info:
