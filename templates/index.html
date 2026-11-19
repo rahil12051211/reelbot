@@ -898,11 +898,14 @@ function poll(){
       resetUIState();
       document.getElementById('sys_state').textContent=d.status==='done'?'CUT & IG UPLOAD COMPLETE':'PIPELINE IDLE';
       loadVault();
-      // Continue Autopilot on the locked user topic until 200 reels are uploaded!
+      // Continue Autopilot on the locked user topic until 200 reels are uploaded (and auto-heal on any source error)!
       const ap=d.autopilot||{};
       const curTopic=document.getElementById('ap_topic').value.trim();
-      if(d.status==='done' && AUTOPILOT_ACTIVE && document.getElementById('ap_loop').checked && curTopic && (ap.uploaded_count||0)<(ap.target_limit||200)){
-        document.getElementById('status_txt').textContent=`♾️ AUTOPILOT (${ap.uploaded_count||0}/${ap.target_limit||200}): LOCKING NEXT "${curTopic.toUpperCase()}" VIDEO IN 3S…`;
+      if((d.status==='done' || d.status.startsWith('error')) && AUTOPILOT_ACTIVE && document.getElementById('ap_loop').checked && curTopic && (ap.uploaded_count||0)<(ap.target_limit||200)){
+        const healMsg=d.status.startsWith('error')
+          ? `🧠 AI SELF-HEAL: SKIPPING RESTRICTED SOURCE → LOCKING NEXT "${curTopic.toUpperCase()}" VIDEO IN 3S…`
+          : `♾️ AUTOPILOT (${ap.uploaded_count||0}/${ap.target_limit||200}): LOCKING NEXT "${curTopic.toUpperCase()}" VIDEO IN 3S…`;
+        document.getElementById('status_txt').textContent=healMsg;
         setTimeout(()=>{
           if(document.getElementById('ap_loop').checked && curTopic){
             launchAutopilot(curTopic);
