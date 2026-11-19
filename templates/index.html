@@ -22,7 +22,7 @@ body{
   perspective:1200px;-webkit-tap-highlight-color:transparent;
 }
 #bg3d{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-.wrap{position:relative;z-index:2;max-width:1120px;margin:0 auto;padding:24px 18px 70px}
+.wrap{position:relative;z-index:2;max-width:1140px;margin:0 auto;padding:24px 18px 70px}
 
 /* Header with 3D Gyro Core */
 header{
@@ -148,19 +148,60 @@ input:focus,select:focus,textarea:focus{
 .ig-feedback.err{display:flex;background:rgba(255,0,85,0.14);border:1px solid rgba(255,0,85,0.45);color:#ff7898}
 .ig-feedback.wait{display:flex;background:rgba(255,184,0,0.12);border:1px solid rgba(255,184,0,0.4);color:var(--amber)}
 
-.toggles{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+/* Autopilot Mission Control Strip */
+.autopilot-bar{
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 15px;
+  border-radius:14px;margin-bottom:14px;
+  background:linear-gradient(135deg,rgba(0,255,157,0.08),rgba(0,242,254,0.09),rgba(255,0,127,0.09));
+  border:1px solid rgba(0,255,157,0.35);box-shadow:0 0 22px rgba(0,255,157,0.12);
+}
+.ap-lbl{font-size:11.5px;font-weight:900;letter-spacing:1px;color:var(--lime);text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.ap-topic-inp{flex:1;min-width:210px;padding:9px 12px;height:40px;font-weight:700;border-color:rgba(0,255,157,0.45)}
+.quota-pill{
+  font-size:11.5px;font-weight:800;letter-spacing:.7px;padding:7px 13px;border-radius:99px;
+  background:rgba(0,242,254,0.12);color:var(--cyan);border:1px solid rgba(0,242,254,0.4);
+}
+.btn-autopilot{
+  padding:10px 20px;border:1px solid var(--lime);border-radius:11px;cursor:pointer;
+  font-weight:900;font-size:13px;letter-spacing:.9px;text-transform:uppercase;color:#030712;
+  background:linear-gradient(135deg,var(--lime),var(--cyan));
+  box-shadow:0 0 22px rgba(0,255,157,0.5);transition:all .18s;
+}
+.btn-autopilot:hover:not(:disabled){
+  transform:translateY(-2px) scale(1.03);
+  box-shadow:0 0 32px rgba(0,255,157,0.85),0 0 18px var(--cyan);
+}
+.btn-autopilot:disabled{opacity:.5;cursor:not-allowed}
+
+/* 3D Autopilot Topic Modal */
+.modal-bg{
+  position:fixed;inset:0;z-index:999;background:rgba(3,5,14,0.82);backdrop-filter:blur(12px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-box{
+  width:100%;max-width:480px;padding:26px;border-radius:20px;
+  background:linear-gradient(145deg,#0f1631,#181038);border:1px solid var(--lime);
+  box-shadow:0 0 45px rgba(0,255,157,0.35),0 20px 60px rgba(0,0,0,0.8);
+}
+.modal-box h3{font-size:1.3rem;color:var(--lime);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.modal-box p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.45}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+
+.toggles{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 label.chk{
-  display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;
-  padding:9px 14px;border-radius:10px;background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.1);transition:all .2s;
+  display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;
+  padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.1);transition:all .2s;font-weight:600;
 }
 label.chk:hover{border-color:var(--cyan);background:rgba(0,242,254,0.08)}
+label.chk.spicy{border-color:rgba(255,0,127,0.38);color:#ff99cc;background:rgba(255,0,127,0.08)}
+label.chk.spicy:hover{border-color:var(--magenta);background:rgba(255,0,127,0.18)}
 label.chk input{width:16px;height:16px;accent-color:var(--cyan)}
 
 .btn-grp{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .btn-launch{
   padding:12px 24px;border:none;border-radius:12px;cursor:pointer;
-  font-weight:800;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#fff;
+  font-weight:800;font-size:13.5px;letter-spacing:1px;text-transform:uppercase;color:#fff;
   background:linear-gradient(135deg,var(--cyan),var(--violet) 55%,var(--magenta));
   background-size:200% 200%;box-shadow:0 8px 25px rgba(138,43,226,0.45),0 0 20px rgba(0,242,254,0.35);
   transition:transform .18s,box-shadow .2s;transform:translateZ(15px);
@@ -324,19 +365,33 @@ label.chk input{width:16px;height:16px;accent-color:var(--cyan)}
   .deck{padding:15px}
   .field,.field.url-field{flex:1 1 100%;min-width:100%}
   .field.sm{flex:1 1 calc(33.3% - 8px);min-width:85px}
-  .btn-ig-conn,.btn-2fa-conn{flex:1 1 100%;width:100%;height:44px;justify-content:center}
+  .btn-ig-conn,.btn-2fa-conn,.btn-autopilot,.ap-topic-inp{flex:1 1 100%;width:100%;height:44px;justify-content:center}
   .toggles{width:100%}
   label.chk{flex:1 1 100%;justify-content:flex-start}
   .btn-grp{width:100%;margin-left:0}
   .btn-launch,.btn-stop{flex:1 1 100%;width:100%;padding:14px}
   .stages{grid-template-columns:repeat(3,1fr)}
   .clips{grid-template-columns:1fr;gap:18px}
-  input,select,textarea{font-size:16px} /* Prevents iOS auto-zoom on focus */
+  input,select,textarea{font-size:16px}
 }
 </style>
 </head>
 <body>
 <canvas id="bg3d"></canvas>
+
+<!-- 3D Topic Prompt Modal for Autopilot -->
+<div class="modal-bg" id="topic_modal">
+  <div class="modal-box">
+    <h3>🎯 Enter Your Autopilot Topic</h3>
+    <p>Autopilot will strictly search, extract cheatcodes &amp; viral moments, and build non-duplicate anti-copyright reels <strong>only</strong> on your chosen topic (and automatically shut down the system after uploading 200 reels):</p>
+    <input type="text" id="modal_topic_inp" placeholder="e.g., GTA 6 cheatcodes, AI money hacks, Python tricks, Fitness…" onkeydown="if(event.key==='Enter')confirmTopicModal()">
+    <div class="modal-actions">
+      <button type="button" class="btn-ig-conn" onclick="closeTopicModal()">Cancel</button>
+      <button type="button" class="btn-autopilot" onclick="confirmTopicModal()">🚀 Lock Topic &amp; Start Autopilot</button>
+    </div>
+  </div>
+</div>
+
 <div class="wrap">
   <header>
     <div class="brand">
@@ -348,7 +403,7 @@ label.chk input{width:16px;height:16px;accent-color:var(--cyan)}
       </div>
       <div class="title-grp">
         <h1>ReelBot // Neural 3D Studio</h1>
-        <div class="sub">Instant Live DVR Burst · Cinema 80% Zoom · Auto Instagram First</div>
+        <div class="sub">Anti-Copyright Shield · Zero-Duplicate Engine · 200-Reel Auto-Shutdown</div>
       </div>
     </div>
     <div class="hdr-badges">
@@ -358,35 +413,78 @@ label.chk input{width:16px;height:16px;accent-color:var(--cyan)}
       </div>
       <div class="telemetry">
         <div class="pulse"></div>
-        <span id="sys_state">CORE ONLINE // INT8 READY</span>
+        <span id="sys_state">CORE ONLINE // ANTI-COPYRIGHT READY</span>
       </div>
     </div>
   </header>
 
   <div class="deck" id="deck">
+    <!-- Autonomous Autopilot Bar -->
+    <div class="autopilot-bar">
+      <span class="ap-lbl">🤖 Topic Autopilot:</span>
+      <input type="text" id="ap_topic" class="ap-topic-inp" placeholder="Locked Topic (click 🤖 Launch Autopilot to set topic)…">
+      <button type="button" class="btn-autopilot" id="btn_ap" onclick="onAutopilotClick()">🤖 Launch Autopilot Mission</button>
+      <span class="quota-pill" id="ap_quota_badge">📊 0 / 200 Uploaded (Auto-Off at 200)</span>
+      <label class="chk" style="margin-left:auto"><input type="checkbox" id="ap_loop" checked> ♾️ Continuous to 200 Reels</label>
+    </div>
+
+    <div class="live-chips" id="trending_bar">
+      <span class="lbl" id="trending_lbl">🎮 GTA 6 Streamer Reactions &amp; Cheatcodes:</span>
+      <span id="trending_chips_list" style="display:contents">
+        <button type="button" class="chip" style="border-color:var(--cyan);color:var(--cyan);background:rgba(0,242,254,0.12)" onclick="pickGTA('https://www.youtube.com/watch?v=mlguGHEeVO0','GTA 6','black_bar')">😭 Speed Reacts to GTA 6 (2.1M)</button>
+        <button type="button" class="chip" style="border-color:var(--cyan);color:var(--cyan);background:rgba(0,242,254,0.12)" onclick="pickGTA('https://www.youtube.com/watch?v=4RTrYbX3rZE','GTA 6','split_cam')">😳 Lacy / Jason GTA 6 Map Reaction</button>
+        <button type="button" class="chip" style="border-color:var(--cyan);color:var(--cyan);background:rgba(0,242,254,0.12)" onclick="pickGTA('https://www.youtube.com/watch?v=B6biwxo0dMQ','GTA 6','black_bar')">🤯 Kai Cenat Reacts to GTA 6 (610K)</button>
+        <button type="button" class="chip" style="border-color:var(--cyan);color:var(--cyan);background:rgba(0,242,254,0.12)" onclick="pickGTA('https://www.youtube.com/watch?v=FV93IVwJP_4','GTA 6','auto')">🎮 GTA 6 Launch Trailer Secrets (1.9M)</button>
+        <button type="button" class="chip" style="border-color:var(--cyan);color:var(--cyan);background:rgba(0,242,254,0.12)" onclick="pickGTA('https://www.youtube.com/watch?v=iskLCY86up8','GTA Cheatcodes','auto')">🕹️ Top 20 GTA Cheats (3.5M)</button>
+      </span>
+      <span class="chip" id="trending_timer" style="border-color:var(--gold);color:var(--gold);background:rgba(255,204,0,0.12);cursor:default;margin-left:auto">🔄 New Trending in 05:00</span>
+      <button type="button" class="chip" style="border-color:var(--lime);color:var(--lime);background:rgba(0,255,157,0.14)" onclick="refreshTrending(true)">↻ New Trending Now</button>
+    </div>
     <div class="live-chips">
       <span class="lbl">🔴 Top Live Streams Now:</span>
       <button type="button" class="chip" onclick="pickLive('https://www.youtube.com/watch?v=wU4ZKAfY5rM')">🔴 Citizen TV Live (138K)</button>
       <button type="button" class="chip" onclick="pickLive('https://www.youtube.com/watch?v=d407BwnLeVA')">🔴 NBC News NOW (6.1K)</button>
       <button type="button" class="chip" onclick="pickLive('https://www.youtube.com/watch?v=EDbWwVR7i9Q')">🔴 GB News 24/7 (4.0K)</button>
       <button type="button" class="chip" onclick="pickLive('https://www.youtube.com/watch?v=kyh14T8Oa8M')">🔴 ABC News Live (3.1K)</button>
+      <button type="button" class="chip" style="border-color:var(--lime);color:var(--lime);background:rgba(0,255,157,0.12)" onclick="document.getElementById('nreels').value=20">⚡ Set 20-Reel Turbo Batch</button>
     </div>
     <div class="grid-row">
       <div class="field url-field">
-        <span>Stream / VOD Source URL</span>
-        <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=... or click a Live Stream above">
+        <span>Stream / VOD Source URL (Or click 🤖 Launch Autopilot Mission above)</span>
+        <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=... or use 🤖 Topic Autopilot">
       </div>
       <div class="field sm">
         <span>Reel Count</span>
-        <input type="number" id="nreels" value="3" min="1" max="10">
+        <input type="number" id="nreels" value="5" min="1" max="30">
       </div>
       <div class="field sm">
         <span>Live Mins</span>
-        <input type="number" id="livemin" value="1" min="0" title="Live capture minutes (0 = VOD, 1 = fast 60s live burst)">
+        <input type="number" id="livemin" value="0" min="0" title="Live capture minutes (0 = VOD/Auto, 1 = fast 60s live burst)">
       </div>
       <div class="field sm">
         <span>Neural Model</span>
         <select id="model"><option selected value="tiny">tiny ⚡</option><option value="base">base</option><option value="small">small</option><option value="medium">medium</option><option value="large-v2">large-v2</option></select>
+      </div>
+      <div class="field sm" style="flex:0 0 175px">
+        <span>Edit Layout Style</span>
+        <select id="layout_mode">
+          <option selected value="auto">🎬 Auto (Speed + Lacy Mix)</option>
+          <option value="black_bar">⬛ Speed Black-Bar Reaction</option>
+          <option value="split_cam">📱 Lacy Split-Cam + Map</option>
+        </select>
+      </div>
+      <div class="field sm" style="flex:0 0 185px">
+        <span>Trending BGM Song</span>
+        <select id="bgm_mode">
+          <option selected value="auto">🎵 Auto Trend BGM (Some Reels)</option>
+          <option value="always">🔥 Trending BGM (Every Reel)</option>
+          <option value="gta6_vice_synth">🌴 GTA 6 Vice City Synthwave</option>
+          <option value="phonk_drift">⚡ Trending Drift Phonk 808</option>
+          <option value="dark_suspense">👀 Viral Mystery / Leak Pluck</option>
+          <option value="chill_slowed">😭 Slowed + Reverb Vibe</option>
+          <option value="spicy_afrobeat">🌶️ Late-Night Spicy Bounce</option>
+          <option value="none">🔇 Original Audio Only</option>
+        </select>
       </div>
     </div>
     <div class="grid-row">
@@ -412,7 +510,8 @@ label.chk input{width:16px;height:16px;accent-color:var(--cyan)}
     <div id="ig_feedback" class="ig-feedback"></div>
     <div class="grid-row" style="margin-top:6px">
       <div class="toggles">
-        <label class="chk"><input type="checkbox" id="autoig" checked> ⚡ Auto-Upload to Instagram First After Cut</label>
+        <label class="chk"><input type="checkbox" id="autoig" checked> ⚡ Auto-Upload to Instagram First</label>
+        <label class="chk spicy"><input type="checkbox" id="spicy18"> 🔞 18+ Spicy / Unfiltered Mode</label>
         <label class="chk"><input type="checkbox" id="autoyt"> Auto-Publish YouTube Shorts</label>
       </div>
       <div class="btn-grp">
@@ -520,6 +619,13 @@ function pickLive(u){
   document.getElementById('livemin').value=1;
 }
 
+function pickGTA(u,top,lay){
+  document.getElementById('url').value=u;
+  document.getElementById('livemin').value=0;
+  document.getElementById('ap_topic').value=top||'GTA 6';
+  if(lay && document.getElementById('layout_mode'))document.getElementById('layout_mode').value=lay;
+}
+
 // --- Instagram Connection Verification & Live Badge ---
 function on2faInput(){
   const v=document.getElementById('ig2fa').value.trim();
@@ -559,6 +665,15 @@ function renderIGBadge(st){
   }
 }
 
+function renderAutopilotState(ap){
+  if(!ap)return;
+  const qb=document.getElementById('ap_quota_badge');
+  if(qb)qb.textContent=`📊 ${ap.uploaded_count||0} / ${ap.target_limit||200} Uploaded (Auto-Off at ${ap.target_limit||200})`;
+  if(ap.topic && !document.getElementById('ap_topic').value){
+    document.getElementById('ap_topic').value=ap.topic;
+  }
+}
+
 function connectIG(){
   const u=document.getElementById('iguser').value.trim();
   const p=document.getElementById('igpass').value;
@@ -585,23 +700,52 @@ function connectIG(){
 
 fetch('/api/ig/status').then(r=>r.json()).then(renderIGBadge);
 
-// --- Pipeline Job Controller ---
-let JOB=null,TIMER=null,LAST_CLIPS_SIG='';
-function create(){
-  const url=document.getElementById('url').value.trim();
-  if(!url)return alert('Paste a stream or video URL');
+// --- Pipeline Job Controller & Strict User-Topic Autopilot ---
+let JOB=null,TIMER=null,LAST_CLIPS_SIG='',AUTOPILOT_ACTIVE=false;
+
+function onAutopilotClick(){
+  // Always ask the user for the topic when Autopilot button is pressed!
+  const cur=document.getElementById('ap_topic').value.trim();
+  const m=document.getElementById('topic_modal');
+  const inp=document.getElementById('modal_topic_inp');
+  inp.value=cur;
+  m.style.display='flex';
+  setTimeout(()=>inp.focus(),60);
+}
+
+function closeTopicModal(){
+  document.getElementById('topic_modal').style.display='none';
+}
+
+function confirmTopicModal(){
+  const tVal=document.getElementById('modal_topic_inp').value.trim();
+  if(!tVal)return alert('Please enter the topic on which your reels must be made!');
+  document.getElementById('ap_topic').value=tVal;
+  closeTopicModal();
+  launchAutopilot(tVal);
+}
+
+function launchAutopilot(forcedTopic){
+  const topic=(forcedTopic || document.getElementById('ap_topic').value || '').trim();
+  if(!topic)return onAutopilotClick();
+  AUTOPILOT_ACTIVE=true;
   document.getElementById('go').disabled=true;
+  document.getElementById('btn_ap').disabled=true;
   document.getElementById('stopbtn').style.display='inline-block';
   document.getElementById('hud').style.display='block';
+  document.getElementById('status_txt').textContent=`🤖 AUTOPILOT SEARCHING YOUTUBE STRICTLY FOR TOPIC: "${topic.toUpperCase()}"…`;
   document.getElementById('orb').classList.add('fast');
-  document.getElementById('sys_state').textContent='NEURAL PIPELINE ACTIVE';
-  WARP=3.2;LAST_CLIPS_SIG='';
-  fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},
+  document.getElementById('sys_state').textContent=`AUTOPILOT // ${topic.toUpperCase()}`;
+  WARP=3.5;LAST_CLIPS_SIG='';
+  fetch('/api/autopilot',{
+    method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
-      url,
+      topic,
+      spicy_18:document.getElementById('spicy18').checked,
       n:+document.getElementById('nreels').value,
-      live_min:+document.getElementById('livemin').value,
       model:document.getElementById('model').value,
+      layout_mode:document.getElementById('layout_mode').value,
+      bgm_mode:document.getElementById('bgm_mode').value,
       ig_username:document.getElementById('iguser').value.trim(),
       ig_password:document.getElementById('igpass').value,
       llm_key:document.getElementById('llmkey').value.trim(),
@@ -611,10 +755,50 @@ function create(){
   }).then(r=>r.json()).then(d=>{
     if(d.error){
       alert(d.error);
-      document.getElementById('go').disabled=false;
-      document.getElementById('stopbtn').style.display='none';
-      document.getElementById('orb').classList.remove('fast');
-      WARP=1;return;
+      resetUIState();
+      return;
+    }
+    document.getElementById('url').value=d.url;
+    document.getElementById('livemin').value=0;
+    if(d.autopilot)renderAutopilotState(d.autopilot);
+    JOB=d.id;poll();
+    if(TIMER)clearInterval(TIMER);
+    TIMER=setInterval(poll,1500);
+  }).catch(()=>resetUIState());
+}
+
+function create(){
+  const url=document.getElementById('url').value.trim();
+  if(!url)return onAutopilotClick();
+  AUTOPILOT_ACTIVE=false;
+  document.getElementById('go').disabled=true;
+  document.getElementById('btn_ap').disabled=true;
+  document.getElementById('stopbtn').style.display='inline-block';
+  document.getElementById('hud').style.display='block';
+  document.getElementById('orb').classList.add('fast');
+  document.getElementById('sys_state').textContent='NEURAL PIPELINE ACTIVE';
+  WARP=3.2;LAST_CLIPS_SIG='';
+  fetch('/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      url,
+      topic:document.getElementById('ap_topic').value.trim(),
+      n:+document.getElementById('nreels').value,
+      live_min:+document.getElementById('livemin').value,
+      model:document.getElementById('model').value,
+      layout_mode:document.getElementById('layout_mode').value,
+      bgm_mode:document.getElementById('bgm_mode').value,
+      spicy_18:document.getElementById('spicy18').checked,
+      ig_username:document.getElementById('iguser').value.trim(),
+      ig_password:document.getElementById('igpass').value,
+      llm_key:document.getElementById('llmkey').value.trim(),
+      auto_ig:document.getElementById('autoig').checked,
+      auto_yt:document.getElementById('autoyt').checked
+    })
+  }).then(r=>r.json()).then(d=>{
+    if(d.error){
+      alert(d.error);
+      resetUIState();
+      return;
     }
     JOB=d.id;poll();
     if(TIMER)clearInterval(TIMER);
@@ -622,16 +806,23 @@ function create(){
   });
 }
 
+function resetUIState(){
+  document.getElementById('go').disabled=false;
+  document.getElementById('btn_ap').disabled=false;
+  document.getElementById('stopbtn').style.display='none';
+  document.getElementById('orb').classList.remove('fast');
+  WARP=1;
+}
+
 function stopJob(){
-  if(!JOB)return;
+  AUTOPILOT_ACTIVE=false;
+  document.getElementById('ap_loop').checked=false;
+  if(!JOB){resetUIState();return;}
   fetch(`/api/jobs/${JOB}/cancel`,{method:'POST'}).then(()=>{
     if(TIMER){clearInterval(TIMER);TIMER=null;}
     document.getElementById('status_txt').textContent='STOPPED BY USER';
-    document.getElementById('go').disabled=false;
-    document.getElementById('stopbtn').style.display='none';
-    document.getElementById('orb').classList.remove('fast');
     document.getElementById('sys_state').textContent='PROCESS TERMINATED';
-    WARP=1;
+    resetUIState();
   });
 }
 
@@ -647,6 +838,7 @@ function updateHUD(d){
     if(el)el.className='stg'+(k<stg||d.status==='done'?' done':(k===stg?' active':''));
   }
   if(d.ig_account)renderIGBadge(d.ig_account);
+  if(d.autopilot)renderAutopilotState(d.autopilot);
 }
 
 function poll(){
@@ -662,11 +854,13 @@ function poll(){
       (d.clips||[]).forEach((c,i)=>{
         const card=document.createElement('div');card.className='card';
         const timeRange=fmtTime(c.start)+' → '+fmtTime(c.end)+' ('+Math.round(c.end-c.start)+'s)';
+        const posterAttr=c.thumb?`poster="/files/${JOB}/${c.thumb}"`:'';
         let actions='',upInfo='';
         if(c.file){
           actions+=`<button onclick="dl('${JOB}','${c.file}')">💾 SAVE</button>`;
-          actions+=`<button onclick="up('${JOB}',${i},'ig','cap_${JOB}_${i}')">${c.ig_status==='done'?'✅ IG POSTED':c.ig_status==='uploading'?'⏳ IG UPLOADING...':'📸 IG REEL'}</button>`;
-          if(c.ig_url)actions+=`<a class="btn-link" href="${c.ig_url}" target="_blank">↗ VIEW IG</a>`;
+          if(c.thumb)actions+=`<button onclick="dl('${JOB}','${c.thumb}')">🖼️ THUMB</button>`;
+          actions+=`<button onclick="up('${JOB}',${i},'ig','cap_${JOB}_${i}')">${c.ig_status==='done'?'✅ IG POSTED':c.ig_status==='uploading'?'⏳ IG...':'📸 IG REEL'}</button>`;
+          if(c.ig_url)actions+=`<a class="btn-link" href="${c.ig_url}" target="_blank">↗ VIEW</a>`;
           actions+=`<button onclick="up('${JOB}',${i},'yt','cap_${JOB}_${i}')">${c.yt_status==='done'?'✅ YT':c.yt_status==='uploading'?'⏳ YT...':'▶️ YT'}</button>`;
         }
         if(c.ig_status==='done')upInfo+=`<div class="ok-banner">✅ Uploaded to Instagram Reels ${c.ig_url?`(<a href="${c.ig_url}" target="_blank" style="color:#fff">Open Reel ↗</a>)`:''}</div>`;
@@ -676,9 +870,9 @@ function poll(){
           `<div class="glare"></div>`+
           `<div class="vid-wrap">`+
             `<div class="time-float">${timeRange}</div>`+
-            `<div class="badge-float">🔥 ${c.viral_score||88}% VIRAL</div>`+
+            `<div class="badge-float">🔥 ${c.viral_score||93}% VIRAL</div>`+
             `<div class="ttl-float">⏳ 48h TTL</div>`+
-            `${c.file?`<video src="/files/${JOB}/${c.file}" controls preload="metadata" playsinline></video>`
+            `${c.file?`<video src="/files/${JOB}/${c.file}" ${posterAttr} controls preload="metadata" playsinline></video>`
                      :`<div class="vid-placeholder"><div class="holo-cube"></div><span>${c.status}…</span></div>`}`+
           `</div>`+
           `<div class="info">`+
@@ -693,14 +887,28 @@ function poll(){
       });
       loadVault();
     }
+    if(d.autopilot && d.autopilot.shutdown_triggered){
+      clearInterval(TIMER);TIMER=null;
+      resetUIState();
+      document.getElementById('sys_state').textContent='200/200 COMPLETE // SYSTEM SWITCHED OFF';
+      return;
+    }
     if(d.status==='done'||d.status.startsWith('error')||d.status==='stopped by user'){
       clearInterval(TIMER);TIMER=null;
-      document.getElementById('go').disabled=false;
-      document.getElementById('stopbtn').style.display='none';
-      document.getElementById('orb').classList.remove('fast');
+      resetUIState();
       document.getElementById('sys_state').textContent=d.status==='done'?'CUT & IG UPLOAD COMPLETE':'PIPELINE IDLE';
-      WARP=1;
       loadVault();
+      // Continue Autopilot on the locked user topic until 200 reels are uploaded!
+      const ap=d.autopilot||{};
+      const curTopic=document.getElementById('ap_topic').value.trim();
+      if(d.status==='done' && AUTOPILOT_ACTIVE && document.getElementById('ap_loop').checked && curTopic && (ap.uploaded_count||0)<(ap.target_limit||200)){
+        document.getElementById('status_txt').textContent=`♾️ AUTOPILOT (${ap.uploaded_count||0}/${ap.target_limit||200}): LOCKING NEXT "${curTopic.toUpperCase()}" VIDEO IN 3S…`;
+        setTimeout(()=>{
+          if(document.getElementById('ap_loop').checked && curTopic){
+            launchAutopilot(curTopic);
+          }
+        },3000);
+      }
     }
   });
 }
@@ -716,11 +924,12 @@ function loadVault(){
   if(document.activeElement && document.activeElement.classList.contains('cap'))return;
   fetch('/api/reels').then(r=>r.json()).then(d=>{
     if(d.ig_account)renderIGBadge(d.ig_account);
+    if(d.autopilot)renderAutopilotState(d.autopilot);
     const list=d.reels||[];
     document.getElementById('vault_count').textContent=list.length;
     const vg=document.getElementById('vault_grid');
     if(!list.length){
-      vg.innerHTML=`<div class="empty-vault" style="grid-column:1/-1">No AI-edited reels in vault yet. Launch a neural cut above — generated reels appear here, auto-upload to Instagram first, and auto-delete after 48 hours.</div>`;
+      vg.innerHTML=`<div class="empty-vault" style="grid-column:1/-1">No AI-edited reels in vault yet. Click <strong>🤖 Launch Autopilot Mission</strong> to choose your topic — generated reels appear here, auto-upload to Instagram first, and auto-delete after 48 hours.</div>`;
       return;
     }
     vg.innerHTML='';
@@ -728,6 +937,7 @@ function loadVault(){
       const card=document.createElement('div');card.className='card';
       const timeRange=fmtTime(r.start)+' → '+fmtTime(r.end)+' ('+Math.round(r.end-r.start)+'s)';
       const capId=`vcap_${r.job_id}_${r.idx}`;
+      const posterAttr=r.thumb?`poster="/files/${r.job_id}/${r.thumb}"`:'';
       let upInfo='';
       if(r.ig_status==='done')upInfo+=`<div class="ok-banner">✅ Uploaded to Instagram Reels ${r.ig_url?`(<a href="${r.ig_url}" target="_blank" style="color:#fff">Open Reel ↗</a>)`:''}</div>`;
       if(r.ig_status&&r.ig_status.startsWith('error'))upInfo+=`<div class="err">IG: ${r.ig_status}</div>`;
@@ -736,9 +946,9 @@ function loadVault(){
         `<div class="glare"></div>`+
         `<div class="vid-wrap">`+
           `<div class="time-float">${timeRange}</div>`+
-          `<div class="badge-float">🔥 ${r.viral_score||88}% VIRAL</div>`+
+          `<div class="badge-float">🔥 ${r.viral_score||93}% VIRAL</div>`+
           `<div class="ttl-float">⏳ ${fmtTTL(r.remaining_seconds)}</div>`+
-          `<video src="/files/${r.job_id}/${r.file}" controls preload="metadata" playsinline></video>`+
+          `<video src="/files/${r.job_id}/${r.file}" ${posterAttr} controls preload="metadata" playsinline></video>`+
         `</div>`+
         `<div class="info">`+
           `<h3>${r.title}</h3>`+
@@ -747,6 +957,7 @@ function loadVault(){
           `${upInfo}`+
           `<div class="actions">`+
             `<button onclick="dl('${r.job_id}','${r.file}')">💾 SAVE</button>`+
+            `${r.thumb?`<button onclick="dl('${r.job_id}','${r.thumb}')">🖼️ THUMB</button>`:''}`+
             `<button onclick="up('${r.job_id}',${r.idx},'ig','${capId}')">${r.ig_status==='done'?'✅ IG POSTED':r.ig_status==='uploading'?'⏳ IG...':'📸 IG REEL'}</button>`+
             `${r.ig_url?`<a class="btn-link" href="${r.ig_url}" target="_blank">↗ VIEW</a>`:''}`+
             `<button onclick="up('${r.job_id}',${r.idx},'yt','${capId}')">${r.yt_status==='done'?'✅ YT':r.yt_status==='uploading'?'⏳ YT...':'▶️ YT'}</button>`+
@@ -781,6 +992,51 @@ function delReel(jid,file){
 function dl(jid,f){window.open(`/files/${jid}/${f}`)}
 function fmtTime(s){const m=Math.floor(s/60),sec=Math.floor(s%60);return m+':'+String(sec).padStart(2,'0')}
 
+// --- 5-Minute Auto-Refreshing Trending Topic & Viral Chips Engine ---
+let TREND_REM_SEC=300;
+function refreshTrending(forceNext=false){
+  const curTopic=document.getElementById('ap_topic').value.trim();
+  const q=`/api/trending?force=${forceNext?'1':'0'}&topic=${encodeURIComponent(curTopic)}`;
+  fetch(q).then(r=>r.json()).then(d=>{
+    if(!d||!d.chips)return;
+    TREND_REM_SEC=forceNext?300:(d.refresh_in_seconds||300);
+    const lbl=document.getElementById('trending_lbl');
+    if(lbl&&d.label)lbl.textContent=d.label;
+    const box=document.getElementById('trending_chips_list');
+    if(box){
+      box.innerHTML='';
+      d.chips.forEach(c=>{
+        const btn=document.createElement('button');
+        btn.type='button';
+        btn.className='chip';
+        btn.style.cssText='border-color:var(--cyan);color:var(--cyan);background:rgba(0,242,254,0.12)';
+        btn.textContent=`${c.emoji||'🔥'} ${c.title}`;
+        btn.onclick=()=>pickGTA(c.url,c.topic||d.topic||'GTA 6',c.layout||'auto');
+        box.appendChild(btn);
+      });
+    }
+    if(forceNext && d.chips.length>0){
+      const first=d.chips[0];
+      pickGTA(first.url,first.topic||d.topic||'GTA 6',first.layout||'auto');
+    }
+  }).catch(()=>{});
+}
+
+setInterval(()=>{
+  TREND_REM_SEC=Math.max(0,TREND_REM_SEC-1);
+  const el=document.getElementById('trending_timer');
+  if(el){
+    const m=String(Math.floor(TREND_REM_SEC/60)).padStart(2,'0');
+    const s=String(TREND_REM_SEC%60).padStart(2,'0');
+    el.textContent=`🔄 New Trending in ${m}:${s}`;
+  }
+  if(TREND_REM_SEC<=0){
+    TREND_REM_SEC=300;
+    refreshTrending(true);
+  }
+},1000);
+
+refreshTrending(false);
 loadVault();
 setInterval(loadVault,15000);
 </script>
